@@ -6,7 +6,6 @@
 """
 from __future__ import print_function
 
-import os
 import sys
 
 import numpy as np
@@ -14,12 +13,10 @@ import numpy as np
 from initialize import load_yaml_file
 from load import ReadAhiL1
 
-
 TEST = True
 
 
 def ndsi():
-
     # -------------------------------------------------------------------------
     # SolarZenith_MAX : MAXIMUM SOLAR ZENITH ANGLE, *1.0 DEGREE
     solar_zenith_max = None
@@ -268,8 +265,8 @@ def ndsi():
     b_hai_bt11_s = b_hai_bt11 - f_xun_s * delta_t_hai
 
     if TEST:
-        print(' a_low_bt11= ', a_low_bt11,' b_hai_bt11= ', b_hai_bt11)
-        print(' a_low_bt11_n= ', a_low_bt11_n,' a_low_bt11_s= ', a_low_bt11_s)
+        print(' a_low_bt11= ', a_low_bt11, ' b_hai_bt11= ', b_hai_bt11)
+        print(' a_low_bt11_n= ', a_low_bt11_n, ' a_low_bt11_s= ', a_low_bt11_s)
         print(' b_hai_bt11_n= ', b_hai_bt11_n, ' b_hai_bt11_s= ', b_hai_bt11_s)
 
     ref_bt11um_slope_n = (b_hai_bt11_n - a_low_bt11_n) / (b_hai_t_lat - a_low_t_lat)
@@ -291,43 +288,37 @@ def ndsi():
 
     # -------------------------------------------------------------------------
     # Check Swath_Valid by Solar Zenith
-    data_solar_zenith = read_ahi.get_solar_zenith()
-    i_sum_valid = np.logical_and(data_solar_zenith > 0, data_solar_zenith < solar_zenith_max).sum()
-    if i_sum_valid > i_cols * 30:
-        i_swath_valid = 1
-    else:
+    d_solar_zenith = read_ahi.get_solar_zenith()
+    i_sum_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < solar_zenith_max).sum()
+    if i_sum_valid < i_cols * 30:
         raise ValueError('Valid data is not enough.')
 
     # -------------------------------------------------------------------------
     # Read  FILE_GEO
 
     #  GET SensorZenith
-    data_sensor_zenith = read_ahi.get_sensor_zenith()
-    index_valid = np.logical_and(data_sensor_zenith > 0, data_sensor_zenith < 90)
-    data_sensor_zenith[index_valid] = data_sensor_zenith[index_valid] / 180 * np.pi
-    data_sensor_zenith[~index_valid] = 8.0
-    a_satz = data_sensor_zenith
+    d_sensor_zenith = read_ahi.get_sensor_zenith()
+    index_valid = np.logical_and(d_sensor_zenith > 0, d_sensor_zenith < 90)
+    d_sensor_zenith[index_valid] = d_sensor_zenith[index_valid] / 180 * np.pi
+    d_sensor_zenith[~index_valid] = np.nan
 
     #  GET SensorAzimuth
-    data_sensor_azimuth = read_ahi.get_sensor_azimuth()
-    index_valid = np.logical_and(data_sensor_azimuth > -360, data_sensor_azimuth < 360)
-    data_sensor_azimuth[index_valid] = data_sensor_azimuth[index_valid] / 180 * np.pi
-    data_sensor_azimuth[~index_valid] = 8.0
-    a_sata = data_sensor_azimuth
+    d_sensor_azimuth = read_ahi.get_sensor_azimuth()
+    index_valid = np.logical_and(d_sensor_azimuth > -360, d_sensor_azimuth < 360)
+    d_sensor_azimuth[index_valid] = d_sensor_azimuth[index_valid] / 180 * np.pi
+    d_sensor_azimuth[~index_valid] = np.nan
 
     #  GET SolarZenith
-    data_solar_zenith = read_ahi.get_solar_zenith()
-    index_valid = np.logical_and(data_solar_zenith > -360, data_solar_zenith < 360)
-    data_solar_zenith[index_valid] = data_solar_zenith[index_valid] / 180 * np.pi
-    data_solar_zenith[~index_valid] = 8.0
-    a_sunz = data_solar_zenith
+    d_solar_zenith = read_ahi.get_solar_zenith()
+    index_valid = np.logical_and(d_solar_zenith > -360, d_solar_zenith < 360)
+    d_solar_zenith[index_valid] = d_solar_zenith[index_valid] / 180 * np.pi
+    d_solar_zenith[~index_valid] = np.nan
 
     #  GET SolarAzimuth
-    data_solar_azimuth = read_ahi.get_solar_azimuth()
-    index_valid = np.logical_and(data_solar_azimuth > -360, data_solar_azimuth < 360)
-    data_solar_azimuth[index_valid] = data_solar_azimuth[index_valid] / 180 * np.pi
-    data_solar_azimuth[~index_valid] = 8.0
-    a_suna = data_solar_azimuth
+    d_solar_azimuth = read_ahi.get_solar_azimuth()
+    index_valid = np.logical_and(d_solar_azimuth > -360, d_solar_azimuth < 360)
+    d_solar_azimuth[index_valid] = d_solar_azimuth[index_valid] / 180 * np.pi
+    d_solar_azimuth[~index_valid] = np.nan
 
     #  GET LATITUDE
     r_lats = read_ahi.get_latitude()
@@ -340,151 +331,6 @@ def ndsi():
 
     #  GET LandSea
     i_mask = read_ahi.get_land_sea_mask()
-
-    # -------------------------------------------------------------------------
-    # Read  FILE_CM
-
-    # GET Cloud Mask
-    i_cm = read_ahi.get_cloudmask()
-
-    # -------------------------------------------------------------------------
-    # Read  FILE_2KM
-
-    # COMPUTE The CORRECTED REFLECTANCE OF BANDs used
-    cossl = 1.0
-    ref_01 = read_ahi.get_channel_data('VIS0064') * cossl
-    ref_02 = read_ahi.get_channel_data('VIS0086') * cossl
-    ref_03 = read_ahi.get_channel_data('VIS0046') * cossl
-    ref_04 = read_ahi.get_channel_data('VIS0051') * cossl
-    ref_06 = read_ahi.get_channel_data('VIS0160') * cossl
-    ref_07 = read_ahi.get_channel_data('VIS0230') * cossl
-    # ref_26 = read_ahi.get_channel_data('No') * cossl  # 不能做卷积云的判断
-
-    ref_01[ref_01 < 0] = 0.
-    ref_02[ref_01 < 0] = 0.
-    ref_03[ref_01 < 0] = 0.
-    ref_04[ref_01 < 0] = 0.
-    ref_06[ref_01 < 0] = 0.
-    ref_07[ref_01 < 0] = 0.
-
-    # COMPUTE The CORRECTED REFLECTANCE OF BANDs used
-    tbb_20 = read_ahi.get_channel_data('IRX0390')
-    tbb_31 = read_ahi.get_channel_data('IRX1120')
-    tbb_32 = read_ahi.get_channel_data('IRX1230')
-
-    # -------------------------------------------------------------------------
-    # COMPUTE The SUN GLINT EAGLE
-    glint = np.full(data_shape, 8., dtype=np.float16)
-    index = np.logical_and.reduce((np.abs(a_sunz - 8) < 0.0001, np.abs(a_satz - 8) < 0.0001,
-                                   np.abs(a_suna - 8) < 0.0001, np.abs(a_sata - 8) < 0.0001))
-    temp = np.sin(a_sunz) * np.sin(a_satz) * np.cos(a_suna - a_sata) + \
-        np.cos(a_sunz) * np.cos(a_satz)
-    temp[temp > 1] = 1
-    temp[temp < -1] = -1
-    glint[~index] = np.arccos(temp)[~index]
-
-    # -------------------------------------------------------------------------
-    # COMPUTE The SUN GLINT EAGLE
-    ref_lon = r_lons
-    ref_lat = r_lats
-
-    ref_bt11um = np.full(data_shape, np.nan)
-
-    index = np.logical_and(ref_lat >= 0, np.abs(ref_lat) < b_hai_t_lat)
-    ref_bt11um[index] = ref_bt11um_slope_n * np.abs(b_hai_t_lat) + ref_bt11um_offset_n
-
-    index = np.logical_and(ref_lat >= 0, np.abs(ref_lat) > a_low_t_lat)
-    ref_bt11um[index] = ref_bt11um_slope_n * np.abs(a_low_t_lat) + ref_bt11um_offset_n
-
-    index = np.logical_and.reduce((ref_lat >= 0, np.abs(ref_lat) >= b_hai_t_lat, np.abs(ref_lat) <= a_low_t_lat))
-    ref_bt11um[index] = ref_bt11um_slope_n * np.abs(ref_lat) + ref_bt11um_offset_n
-
-    index = np.logical_and(ref_lat < 0, np.abs(ref_lat) < b_hai_t_lat)
-    ref_bt11um[index] = ref_bt11um_slope_s * np.abs(b_hai_t_lat) + ref_bt11um_offset_s
-
-    index = np.logical_and(ref_lat < 0, np.abs(ref_lat) > a_low_t_lat)
-    ref_bt11um[index] = ref_bt11um_slope_s * np.abs(a_low_t_lat) + ref_bt11um_offset_s
-
-    index = np.logical_and.reduce((ref_lat < 0, np.abs(ref_lat) >= b_hai_t_lat, np.abs(ref_lat) <= a_low_t_lat))
-    ref_bt11um[index] = ref_bt11um_slope_s * np.abs(ref_lat) + ref_bt11um_offset_s
-
-    # -------------------------------------------------------------------------
-    #  INITIALIZATION
-    i_mark = np.zeros(data_shape)
-    i_step = np.zeros(data_shape)
-    i_avalible = np.ones(data_shape)
-
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!   QUALITY CONTROLLING   !!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #           iAvalible=1     !!  iAvalible=0(1): Data IS(NOT) USABLE.  !!
-    # !!!!!!!!!!!!!!!!!!!!!!!!!!   QUALITY CONTROLLING   !!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    # # SATURATION AFTER SOLAR ZENITH ANGLE CORRECTING.
-    # index = np.logical_or.reduce((ref_01 > 100,
-    #                               ref_02 > 100,
-    #                               ref_03 > 100,
-    #                               ref_04 > 100,
-    #                               ref_06 > 100,
-    #                               ref_07 > 100))
-    # i_mark[index] = 254
-    # i_step[index] = 2
-    # i_avalible[index] = 0
-
-    # CORRECT SATURATION VALUE AFTER SOLAR ZENITH ANGLE CORRECTING.
-    ref_01[ref_01 > 100] = 100
-    ref_02[ref_02 > 100] = 100
-    ref_03[ref_03 > 100] = 100
-    ref_04[ref_04 > 100] = 100
-    ref_06[ref_06 > 100] = 100
-    ref_07[ref_07 > 100] = 100
-
-    # ref_26[ref_26 > 100] = 100
-    # ref_26[ref_26 < 0.001] = 0.001
-
-    # The SOLAR ZENITH ANGLE EXCEEDS MAXIMUM DEG THRESHOLD.
-    index = np.abs(a_sunz - 8) < 0.0001
-    i_mark[index] = 11
-    i_step[index] = 3
-    i_avalible[index] = 0
-
-    # The Sensor ZENITH ANGLE EXCEEDS MAXIMUM DEG THRESHOLD.
-    index = np.abs(a_satz - 8) < 0.0001
-    i_mark[index] = 11
-    i_step[index] = 4
-    i_avalible[index] = 0
-
-    # The SUN GLINT ANGLE EXCEEDS MAXIMUM DEG THRESHOLD.
-    index = glint <= (15 * np.pi / 180)
-    i_mark[index] = 240
-    i_step[index] = 5
-    i_avalible[index] = 0
-
-    # Check status of Observation Angles.
-    index = np.logical_or.reduce((r_lons < -180, r_lons > 180, r_lats < -90, r_lats > 90))
-    i_mark[index] = 0
-    i_step[index] = 6
-    i_avalible[index] = 0
-
-    # Check status of Location information.
-    index = np.logical_or.reduce((np.abs(a_sunz - 8) < 0.001, np.abs(a_satz - 8) < 0.001,
-                                  np.abs(a_suna - 8) < 0.001, np.abs(a_sata - 8) < 0.001,))
-    i_mark[index] = 0
-    i_step[index] = 7
-    i_avalible[index] = 0
-
-    # CHECK The Data QUALITY (ALL BANDS).
-    index = np.logical_or.reduce((ref_01 <= 0.001, ref_01 >= 100.001,
-                                  ref_02 <= 0.001, ref_02 >= 100.001,
-                                  ref_03 <= 0.001, ref_03 >= 100.001,
-                                  ref_04 <= 0.001, ref_04 >= 100.001,
-                                  ref_06 <= 0.001, ref_06 >= 100.001,
-                                  ref_07 <= 0.001, ref_07 >= 100.001,
-                                  tbb_20 <= 170.0, tbb_20 >= 350.001,
-                                  tbb_31 <= 170.0, tbb_31 >= 340.001,
-                                  tbb_32 <= 170.0, tbb_32 >= 340.001,))
-    i_mark[index] = 255
-    i_step[index] = 8
-    i_avalible[index] = 0
-
     # -------------------------------------------------------------------------
     # MAKE SEA-LAND MASK
     # !!!!   NATIONAL OR PROVINCIAL BOUNDARIES.
@@ -500,36 +346,368 @@ def ndsi():
     # c. !  iMASK = 7:  DEEP_OCEAN            !
     land_condition = np.logical_or.reduce((i_mask == 1, i_mask == 2, i_mask == 3))
     sea_condition = np.logical_or(i_mask == 0, np.logical_and(i_mask > 3, i_mask < 8))
-    lsm = np.full(data_shape, np.nan)
-    lsm[land_condition] = 1
-    lsm[sea_condition] = 0
+    i_lsm = np.full(data_shape, np.nan)
+    i_lsm[land_condition] = 1
+    i_lsm[sea_condition] = 0
 
     # -------------------------------------------------------------------------
-    # JUDGE & MARK  SNOW
-    # !!!    iTAG For marking The case of Data
-    # !!!!---- Notice ----!!!!    0: badData; 1: goodData unused; 2: goodData used.
-    i_tag = np.zeros(data_shape)
-    index = i_avalible == 1
-    ndvis = (ref_02 - ref_01) / (ref_02 + ref_01)
-    ndsi_6 = (ref_04 - ref_06) / (ref_04 + ref_06)
-    ndsi_7 = (ref_04 - ref_07) / (ref_04 + ref_07)
+    # Read  FILE_CM
 
-    dr_16 = ref_01 - ref_06
-    dr_17 = ref_01 - 0.5 * ref_07
-    dt_01 = tbb_20 - tbb_31
-    dt_02 = tbb_20 - tbb_32
-    dt_12 = tbb_31 - tbb_32
+    # GET Cloud Mask
+    i_cm = read_ahi.get_cloudmask()
 
-    rr_21 = ref_02 - ref_01
-    rr_46 = ref_04 - ref_06
-    rr_47 = ref_04 - ref_07
+    # -------------------------------------------------------------------------
+    # Read  FILE_2KM
 
-    # dt_34 = tbb_20 - tbb_23
-    # dt_81 = tbb_29 - tbb_31
-    # dt_38 = tbb_20 - tbb_29
+    # COMPUTE The CORRECTED REFLECTANCE OF BANDs used
+    i_ref_01 = read_ahi.get_channel_data('VIS0064')
+    i_ref_02 = read_ahi.get_channel_data('VIS0086')
+    i_ref_03 = read_ahi.get_channel_data('VIS0046')
+    i_ref_04 = read_ahi.get_channel_data('VIS0051')
+    i_ref_06 = read_ahi.get_channel_data('VIS0160')
+    i_ref_07 = read_ahi.get_channel_data('VIS0230')
+    # i_ref_26 = read_ahi.get_channel_data('No')  # 不能做卷积云的判断
 
-    i_tag[index] = 1
-    
+    # COMPUTE The CORRECTED REFLECTANCE OF BANDs used
+    i_tbb_20 = read_ahi.get_channel_data('IRX0390')
+    i_tbb_31 = read_ahi.get_channel_data('IRX1120')
+    i_tbb_32 = read_ahi.get_channel_data('IRX1230')
+
+    # -------------------------------------------------------------------------
+    #  INITIALIZATION
+    i_mark = np.zeros(data_shape)
+    i_step = np.zeros(data_shape)
+
+    for row in range(i_rows):
+        for col in range(i_cols):
+            ref_lon = r_lons[row, col]
+            ref_lat = r_lats[row, col]
+            ref_dem = r_dems[row, col]
+
+            a_satz = d_sensor_zenith[row, col]
+            a_sata = d_sensor_azimuth[row, col]
+            a_sunz = d_solar_zenith[row, col]
+            a_suna = d_solar_azimuth[row, col]
+
+            lsm = i_lsm[row, col]
+            cm = i_cm[row, col]
+
+            if np.isnan(ref_lon) or np.isnan(ref_lat) or np.isnan(ref_dem) or \
+                    np.isnan(a_satz) or np.isnan(a_sata) or np.isnan(a_sunz) or np.isnan(a_suna) or \
+                    np.isnan(lsm) or np.isnan(cm):
+                i_mark[row, col] = 11
+                i_step[row, col] = 1
+                i_avalible[row, col] = 0
+            else:
+                # -------------------------------------------------------------------------
+                # COMPUTE The SUN GLINT EAGLE
+                temp = np.sin(a_sunz) * np.sin(a_satz) * np.cos(a_suna - a_sata) + \
+                       np.cos(a_sunz) * np.cos(a_satz)
+                if temp > 1:
+                    temp = 1
+                elif temp < -1:
+                    temp = -1
+                glint = np.arccos(temp)
+
+                # -------------------------------------------------------------------------
+                # COMPUTE The SUN GLINT EAGLE
+                if ref_lat >= 0:
+                    if np.abs(ref_lat) < b_hai_t_lat:
+                        ref_bt11um = ref_bt11um_slope_n * np.abs(b_hai_t_lat) + ref_bt11um_offset_n
+                    elif np.abs(ref_lat) > a_low_t_lat:
+                        ref_bt11um = ref_bt11um_slope_n * np.abs(a_low_t_lat) + ref_bt11um_offset_n
+                    else:
+                        ref_bt11um = ref_bt11um_slope_n * np.abs(ref_lat) + ref_bt11um_offset_n
+                else:
+                    if np.abs(ref_lat) < b_hai_t_lat:
+                        ref_bt11um = ref_bt11um_slope_s * np.abs(b_hai_t_lat) + ref_bt11um_offset_s
+                    elif np.abs(ref_lat) > a_low_t_lat:
+                        ref_bt11um = ref_bt11um_slope_s * np.abs(a_low_t_lat) + ref_bt11um_offset_s
+                    else:
+                        ref_bt11um = ref_bt11um_slope_s * np.abs(ref_lat) + ref_bt11um_offset_s
+
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!   QUALITY CONTROLLING   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+            #           iAvalible=1     !!  iAvalible=0(1): Data IS(NOT) USABLE.  !!
+            # !!!!!!!!!!!!!!!!!!!!!!!!!!   QUALITY CONTROLLING   !!!!!!!!!!!!!!!!!!!!!!!!!!!
+            i_avalible = 1
+            ref_01 = i_ref_01[row, col]
+            ref_02 = i_ref_02[row, col]
+            ref_03 = i_ref_03[row, col]
+            ref_04 = i_ref_04[row, col]
+            ref_06 = i_ref_06[row, col]
+            ref_07 = i_ref_07[row, col]
+
+            tbb_20 = i_tbb_20[row, col]
+            tbb_31 = i_tbb_31[row, col]
+            tbb_32 = i_tbb_32[row, col]
+
+            if np.isnan(ref_01) or np.isnan(ref_02) or np.isnan(ref_03) or \
+                    np.isnan(ref_04) or np.isnan(ref_06) or np.isnan(ref_07) \
+                    or np.isnan(tbb_20) or np.isnan(tbb_31) or np.isnan(tbb_32):
+                i_mark[row, col] = 255
+                i_step[row, col] = 2
+                i_avalible = 0
+
+            # CORRECT SATURATION VALUE AFTER SOLAR ZENITH ANGLE CORRECTING.
+            cossl = 1.0
+            ref_01 = ref_01 * cossl
+            ref_02 = ref_01 * cossl
+            ref_03 = ref_01 * cossl
+            ref_04 = ref_01 * cossl
+            ref_06 = ref_01 * cossl
+            ref_07 = ref_01 * cossl
+
+            # CHECK The Data QUALITY (ALL BANDS).
+            if ref_01 <= 0 or ref_01 >= 100.0 or \
+                    ref_02 <= 0 or ref_02 >= 100.0 or \
+                    ref_03 <= 0 or ref_03 >= 100.0 or \
+                    ref_04 <= 0 or ref_04 >= 100.0 or \
+                    ref_06 <= 0 or ref_06 >= 100.0 or \
+                    ref_07 <= 0 or ref_07 >= 100.0 or \
+                    tbb_20 <= 170.0 or tbb_20 >= 350.0 or \
+                    tbb_31 <= 170.0 or tbb_31 >= 340.0 or \
+                    tbb_32 <= 170.0 or tbb_32 >= 340.0:
+                i_mark[row, col] = 255
+                i_step[row, col] = 3
+                i_avalible = 0
+
+            # -------------------------------------------------------------------------
+            # JUDGE & MARK  SNOW
+            # !!!    iTAG For marking The case of Data
+            # !!!!---- Notice ----!!!!    0: badData; 1: goodData unused; 2: goodData used.
+            i_tag = 0
+            judge = True
+            if i_avalible == 1:
+                ndvis = (ref_02 - ref_01) / (ref_02 + ref_01)
+                ndsi_6 = (ref_04 - ref_06) / (ref_04 + ref_06)
+                ndsi_7 = (ref_04 - ref_07) / (ref_04 + ref_07)
+
+                dr_16 = ref_01 - ref_06
+                dr_17 = ref_01 - 0.5 * ref_07
+                dt_01 = tbb_20 - tbb_31
+                dt_02 = tbb_20 - tbb_32
+                dt_12 = tbb_31 - tbb_32
+
+                rr_21 = ref_02 - ref_01
+                rr_46 = ref_04 - ref_06
+                rr_47 = ref_04 - ref_07
+
+                # dt_34 = tbb_20 - tbb_23
+                # dt_81 = tbb_29 - tbb_31
+                # dt_38 = tbb_20 - tbb_29
+
+                i_tag = 1
+
+                # !!! WHEN LAND-WATER MASK IS WRONG  !!!
+                if ndvis > 0.9:
+                    lsm = 1
+                elif ndvis < -0.9:
+                    lsm = 0
+                # !!!========================================================================!!!
+                # !!!========================================================================!!!
+                # !!!!                TESTING For WATER-BODY-PIXEL  LSM = 0                 !!!!
+                # !!!========================================================================!!!
+                # !!!========================================================================!!!
+                # !!!---!!!---!!!   Notice  :  Test on Water Body ( LSM = 0 )    !!!---!!!---!!!
+                # !!!!   TESTING For WATER-BODY ( INNER LAND, Except Glint Area )
+                # !!!!!   TESTING For WATER-BODY ( OCEAN, Except Glint Area )
+                if lsm == 0:
+                    # !!!!   TESTING For WATER-BODY ( INNER LAND, Except Glint Area )
+                    # !!!!!   TESTING For WATER-BODY ( OCEAN, Except Glint Area )
+                    if judge and (rr_46 > 2.0 or ndsi_6 > 0.38 or tbb_31 > 274.5):
+                        i_mark[row, col] = 39
+                        i_step[row, col] = 20
+                        i_tag = 2
+                        if ref_dem > 0:
+                            i_mark[row, col] = 37
+                        judge = False
+                    # !!!!   TESTING For WATER-BODY ( INNER LAND, Except Glint Area )
+                    # !!!!!   TESTING For WATER-BODY ( OCEAN, Except Glint Area )
+                    if judge and (ref_01 < 7.5 or ref_02 < 6. or ref_02 < 11. and ref_06 > 4. and tbb_31 > 274.5):
+                        i_mark[row, col] = 39
+                        i_step[row, col] = 21
+                        i_tag = 2
+                        if ref_dem > 0:
+                            i_mark[row, col] = 37
+                        judge = False
+                    # !!!!   CERTAIN CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
+                    # !!!!   Temperature_Test by Referential BT11 Threshold
+                    # !!!!   Cirrus_Test by Referential R1.38 Threshold
+                    # elif ref_26 > 7.5 or np.abs(ref_lat) > 42. and ref_lat < 60 and tbb_31 < min(ref_bt11um + 5., 245.15):
+                    #     i_mark[row, col] = 50
+                    #     i_step[row, col] = 22
+                    #     i_tag[row, col] = 2
+                    # !!!!   CERTAIN CLOUD-2 (Middle or Low Level Cloud, Except Glint Area)
+                    if judge and ((ref_06 > 8.5 and tbb_20 > 278.5) or (dt_02 > 9.5 and rr_46 < 8.) or \
+                            ndsi_6 < 0.5):
+                        i_mark[row, col] = 50
+                        i_step[row, col] = 23
+                        i_tag = 2
+                        judge = False
+                    if judge and (ndsi_6 > 0.6 and ndvis > -0.15 and tbb_31 < 273.5 and dr_16 > 20. and \
+                                ref_01 > 25. and (4. < ref_06 < 20.)):
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 24
+                            i_tag = 2
+                    if judge and (ndsi_6 > 0.6 and ndvis < -0.03 and tbb_31 < 274.5 and (9.0 < dr_16 < 60.) and
+                            (10. < ref_01 < 60.) and (ref_06 < 10. < rr_46)):
+                        i_mark[row, col] = 100
+                        i_step[row, col] = 25
+                        i_tag = 2
+                    # !!!------------------------------------------------------------------------!!!
+                    # !!!!    Monthly_SnowPackLine_LUT CLOUD-TEST For The REHANDLED DOT
+                    # !!!------------------------------------------------------------------------!!!
+                    # 监测雪线
+                    # !
+                    # !     Eliminate Snow by Monthly_SnowPackLine_LUT Cloud-Test for rehandled pixel
+                    # !
+                    if judge:
+                        if ref_lat > 0:
+                            i_nor_s = 1
+                        else:
+                            i_nor_s = 2
+                        # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
+                        # !!!!   TESTING For SNOW ON LAND
+                        # !!!!   Eliminate_Snow-3
+                        if judge and (np.abs(r_mon_snow_line[np.round(ref_lon * 10, j_month, i_nor_s)]) > abs(ref_lat)
+                                      and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 26
+                            i_tag = 2
+                            judge = False
+                        if judge and (np.abs(ref_lat) < 30. and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 27
+                            i_tag = 2
+                            judge = False
+                        if judge and (i_mark[row, col] == 200 or i_mark[row, col] == 100):
+                            judge = False
+                        # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS( INNER LAND, Except Glint Area )
+                        # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS ( OCEAN, Except Glint Area )
+                    if judge and (ref_06 < 6. and dt_02 < 5. and rr_46 > 3.):
+                        i_mark[row, col] = 39
+                        i_step[row, col] = 28
+                        i_tag = 2
+                        judge = False
+                    if judge:
+                        i_mark[row, col] = 1
+                        i_step[row, col] = 30
+                        i_tag = 2
+                        judge = False
+                # !!!========================================================================!!!
+                # !!!========================================================================!!!
+                # !!!!                   TESTING For LAND-PIXEL  LSM = 1                    !!!!
+                # !!!========================================================================!!!
+                # !!!========================================================================!!!
+                elif lsm == 1:
+                    # !!!!   TESTING For Clear Land ( For Forest )
+                    # !!!!   CERTAIN
+                    if judge and (tbb_31 > 278. and ndvis > 0.2):
+                        i_mark[row, col] = 25
+                        i_step[row, col] = 31
+                        i_tag = 2
+                        judge = False
+                    # !!!!   TESTING For Clear Land ( Including some Dust Storm above Desert )
+                    # !!!!   CERTAIN
+                    if judge and (ndsi_6 < -0.2):
+                        i_mark[row, col] = 25
+                        i_step[row, col] = 32
+                        i_tag = 2
+                        judge = False
+                    if judge and (dt_12 < -0.1 and ndsi_6 < 0.08):
+                        # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
+                        # !!!!   TESTING For Cloud ( Including some Dust Storm above Desert )
+                        # if ref_26 is not None and ref_26 > 5.:
+                        #     i_mark[row, col] = 50
+                        #     i_step[row, col] = 33
+                        #     i_tag = 2
+                        # !!!!   TESTING For Clear Land ( Including some Dust Storm above Desert )
+                        if judge:
+                            # !!!!   TESTING For Clear Land ( Including some Dust Storm above Desert )
+                            if judge and (dt_01 < 28.):
+                                i_mark[row, col] = 25
+                                i_step[row, col] = 34
+                                i_tag = 2
+                                judge = False
+                            # !!!!   TESTING For Cloud ( Including some Dust Storm above Desert )
+                            if judge and (dt_01 >= 28.):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 35
+                                i_tag = 2
+                                judge = False
+                    # !!!!   TESTING For Clear Land ( Including Desert and Non-High-LAT Vegetation )
+                    # !!!!   CERTAIN
+                    if judge and (dr_16 < -7.5):
+                        i_mark[row, col] = 25
+                        i_step[row, col] = 36
+                        i_tag = 2
+                        judge = False
+                    # !!!!   TESTING For Snow on Land ( Certainly Snow by  )
+                    # !!!!   CERTAIN
+                    if judge and (rr_46 > 5.5 and ref_01 > 65. and 240.5 < tbb_31 < 276.5):
+                        i_mark[row, col] = 200
+                        i_step[row, col] = 37
+                        i_tag = 2
+                        judge = False
+                    # !!!!   TESTING For Cloud ( mid-lower Cloud AFTER Desert is marked )
+                    if judge:
+                        if ref_dem < 1800.:
+                            if judge and (ref_06 > 28. and ref_01 > 34. and ref_02 > 44.):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 38
+                                i_tag = 2
+                                judge = False
+                            if judge and (dt_01 > 20.5):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 39
+                                i_tag = 2
+                                judge = False
+                        else:
+                            if judge and (ref_06 > (28. + (ref_dem - 1800.) * 0.004) and ref_01 > 34. and ref_02 > 44.):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 40
+                                i_tag = 2
+                                judge = False
+                            if judge and (dt_01 > (20.5 + (ref_dem - 1800.) * 0.002)):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 41
+                                i_tag = 2
+                                judge = False
+                    if judge:
+                        if tbb_31 < 170 or tbb_31 > 335. or tbb_32 < 170. or tbb_32 > 335. or a_satz> 8. or ndsi_6 > 0.5:
+                            pass
+                        else:
+                            test_dtb = tbb_31 - tbb_32
+                            i_test_t11 = np.round(tbb_31)
+                            if i_test_t11 <= 250:
+                                i_test_t11 = 250
+                            if i_test_t11 >= 310:
+                                i_test_t11 = 310
+                            sec_sza = 100. / np.cos(a_satz)
+                            i_sec_sza = np.round(sec_sza)
+                            if i_sec_sza >= 250:
+                                i_sec_sza = 250
+                            if test_dtb > delta_bt_lut(i_test_t11, i_sec_sza):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 42
+                                i_tag = 2
+                                judge = False
+                    # !!!!   CERTAIN CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
+                    # !!!!   Temperature_Test by Referential BT11 Threshold
+                    # !!!!   Cirrus_Test by Referential R1.38 Threshold
+                    if judge:
+                        compared_t11_hai_lat_a = ref_bt11um + 8. - ref_dem / 1000.
+                        compared_t11_hai_lat_b = 250. - ref_dem / 1000.
+                        compared_t11_hai_lat = min(compared_t11_hai_lat_a, compared_t11_hai_lat_b)
+                        compared_t11_low_lat_a = ref_bt11um + 12. - ref_dem / 400.
+                        compared_t11_low_lat_b = 260. - ref_dem / 400.
+                        compared_t11_low_lat = max(compared_t11_low_lat_a, compared_t11_low_lat_b)
+                        if (40. <= np.abs(ref_lat) <= 57. and tbb_31 < compared_t11_hai_lat) or \
+                                (17. <= np.abs(ref_lat) <= 40. and tbb_31 < compared_t11_low_lat):
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 43
+                            i_tag = 2
+                            judge = False
 
 
 def main(in_file):
