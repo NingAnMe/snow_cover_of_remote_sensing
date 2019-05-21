@@ -122,7 +122,7 @@ def ndsi():
     # Line:   NDVI from 0.010 to 1.000 (Step is 0.01)
     # Column: NDSI from 0.01000 to 1.00000 (Step is 0.00001)
     # Value:  NDSI (Unit is null)
-    delta_bt_lut = np.array([])  # LookUpTable for NDSI-NDVI
+    y_ndsi_x_ndvi = np.array([])  # LookUpTable for NDSI-NDVI
 
     # !!!!! Four Variables below should be USED TOGETHER.
     # !! R138R164LUT,R164T11_LUT,R164R138LUT,T11mT12R164LUT
@@ -135,13 +135,13 @@ def ndsi():
     # !!        Column-R138R164LUT:    R138 from 0.0020 to 0.3000 (No Step)
     # !!     (4)Line-R164R138LUT:      R138 from 0.000 to 0.550 (Step is 0.001)
     # !!        Column-R164R138LUT:    R164 from 0.1500 to 0.3000 (No Step)
-    y_r164xt11 = np.array([])  # LookUpTable For R164T11
-    y_t11mt12xr164 = np.array([])  # LookUpTable For T11mT12R164
-    y_r138xr164 = np.array([])  # LookUpTable For R138R164
-    y_r164xr138 = np.array([])  # LookUpTable For R164R138
+    y_r164_x_t11 = np.array([])  # LookUpTable For R164T11
+    y_t11_m_t12_x_r164 = np.array([])  # LookUpTable For T11mT12R164
+    y_r138_x_r164 = np.array([])  # LookUpTable For R138R164
+    y_r164_x_r138 = np.array([])  # LookUpTable For R164R138
 
     # -------------------------------------------------------------------------
-    # Used for Referrence of 11um Minimum Brightness Temperature.
+    # Used for Reference of 11um Minimum Brightness Temperature.
     ref_bt11um = None
     ref_bt11um_slope_n = None
     ref_bt11um_slope_s = None
@@ -539,18 +539,18 @@ def ndsi():
                     #     i_tag[row, col] = 2
                     # !!!!   CERTAIN CLOUD-2 (Middle or Low Level Cloud, Except Glint Area)
                     if judge and ((ref_06 > 8.5 and tbb_20 > 278.5) or (dt_02 > 9.5 and rr_46 < 8.) or \
-                            ndsi_6 < 0.5):
+                                  ndsi_6 < 0.5):
                         i_mark[row, col] = 50
                         i_step[row, col] = 23
                         i_tag = 2
                         judge = False
                     if judge and (ndsi_6 > 0.6 and ndvis > -0.15 and tbb_31 < 273.5 and dr_16 > 20. and \
-                                ref_01 > 25. and (4. < ref_06 < 20.)):
-                            i_mark[row, col] = 200
-                            i_step[row, col] = 24
-                            i_tag = 2
+                                  ref_01 > 25. and (4. < ref_06 < 20.)):
+                        i_mark[row, col] = 200
+                        i_step[row, col] = 24
+                        i_tag = 2
                     if judge and (ndsi_6 > 0.6 and ndvis < -0.03 and tbb_31 < 274.5 and (9.0 < dr_16 < 60.) and
-                            (10. < ref_01 < 60.) and (ref_06 < 10. < rr_46)):
+                                  (10. < ref_01 < 60.) and (ref_06 < 10. < rr_46)):
                         i_mark[row, col] = 100
                         i_step[row, col] = 25
                         i_tag = 2
@@ -617,10 +617,12 @@ def ndsi():
                     if judge and (dt_12 < -0.1 and ndsi_6 < 0.08):
                         # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
                         # !!!!   TESTING For Cloud ( Including some Dust Storm above Desert )
-                        # if ref_26 is not None and ref_26 > 5.:
-                        #     i_mark[row, col] = 50
-                        #     i_step[row, col] = 33
-                        #     i_tag = 2
+                        if ref_26 is not None and ref_26 > 5.:
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 33
+                            i_tag = 2
+                            judge = False
+
                         # !!!!   TESTING For Clear Land ( Including some Dust Storm above Desert )
                         if judge:
                             # !!!!   TESTING For Clear Land ( Including some Dust Storm above Desert )
@@ -674,7 +676,7 @@ def ndsi():
                                 i_tag = 2
                                 judge = False
                     if judge:
-                        if tbb_31 < 170 or tbb_31 > 335. or tbb_32 < 170. or tbb_32 > 335. or a_satz> 8. or ndsi_6 > 0.5:
+                        if tbb_31 < 170 or tbb_31 > 335. or tbb_32 < 170. or tbb_32 > 335. or a_satz > 8. or ndsi_6 > 0.5:
                             pass
                         else:
                             test_dtb = tbb_31 - tbb_32
@@ -708,6 +710,255 @@ def ndsi():
                             i_step[row, col] = 43
                             i_tag = 2
                             judge = False
+                    # !!!!   CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
+                    if judge:
+                        compared_ref26 = 14.5 + ref_dem / 500.
+                        if (ref_26 > compared_ref26 and dt_01 > 21.) or \
+                                (ref_26 > compared_ref26 - 7. and tbb_31 < ref_bt11um + 8. and ndsi_6 > -0.11):
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 44
+                            i_tag = 2
+                            judge = False
+                    # !!!!!   TESTING For LAND WITH CLEAR SKY
+                    # !!!!!   CERTAIN
+                    if judge:
+                        if (ndvis > 0.24 and ndsi_6 < 0.14) or \
+                                ndsi_6 < -0.21 or \
+                                ndsi_7 < -0.08 or \
+                                (rr_21 > 1.42 and ndsi_6 < 0.145) or \
+                                (dr_17 < 14. and ndsi_6 < 0.135) or \
+                                dr_16 < -9.8:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 45
+                            i_tag = 2
+                    # !!!!   TESTING For Clear Land ( For Forest , small number )
+                    # !!!!   CERTAIN
+                    if judge:
+                        if (ndvis > 0.24 and ndsi_6 < 0.15) or \
+                                ndsi_6 < -0.21 or \
+                                (rr_21 > 1.4 and ndsi_6 < 0.15) or \
+                                dr_16 < -9.5:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 46
+                            i_tag = 2
+                            judge = False
+                    # !!!!   TESTING For Snow in Forest by NDVI-NDSI6-T11
+                    # !!!------------------------------------------------------------------------!!!
+                    # !!!!    NDVI_NDSI_LUT SNOW-TEST
+                    # !!!------------------------------------------------------------------------!!!
+                    if judge:
+                        if ndvis > 0.1:
+                            if ndsi_6 > y_ndsi_x_ndvi[np.round(ndvis * 100, 2)] and \
+                                    tbb_31 < 277.:
+                                i_mark[row, col] = 200
+                                i_step[row, col] = 47
+                                i_tag = 2
+                                judge = False
+                    # !!!!   TESTING For SNOW ON LAND ( For FOREST-SNOW )
+                    # !!!!   SNOW-0
+                    if judge:
+                        if ndsi_6 > 0.18 and np.abs(ref_lat) > 36. and \
+                                240.15 < tbb_31 < 272.15 and \
+                                ndvis > 0.16 and ref_02 > 20. and ref_06 < 17.:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 48
+                            i_tag = 2
+                            judge = False
+
+                    if judge:
+                        if i_mark[row, col] == 25:
+                            judge = False
+
+                    # !!!!   TESTING For SNOW ON LAND ( For Thawy Snow )
+                    # !!!!   SNOW-1
+                    if judge:
+                        if ref_dem > 2000. and ndsi_6 > 0.33 and \
+                                266.15 < tbb_20 < 285.15 and \
+                                264.15 < tbb_31 < 275.15 and \
+                                6.5 < dt_01 < 21. and \
+                                41. < ref_01 < 79. and \
+                                12.5 < ref_06 < 24.5 and \
+                                9.5 < ref_26 < 17.:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 49
+                            i_tag = 2
+                            judge = False
+
+                    # !!!!    TESTING For Thin-Snow by Using R01-R06-NDSI6
+                    # !!!!   SNOW-2
+                    if judge:
+                        if ref_dem > 750. and \
+                                min(ref_bt11um + 25., 265.15) < tbb_31 < 282. and \
+                                20. < ref_01 < 55. and \
+                                10. < ref_06 < 24.:
+                            if ndsi_6 > 0.68 - 0.0262 * ref_06 and \
+                                    ndsi_6 > -0.33 + 0.0164 * ref_01:
+                                i_mark[row, col] = 200
+                                i_step[row, col] = 50
+                                i_tag = 2
+                                judge = False
+
+                    # !!!!   TESTING For SNOW ON LAND
+                    # !!!!   SNOW-3
+                    if judge:
+                        if np.abs(ref_lat > 40.):
+                            snow_ref_bt11um = ref_bt11um + 5.
+                        elif 20. < np.abs(ref_lat) < 40.:
+                            snow_ref_bt11um = ref_bt11um + 18. - ref_dem / 800.
+                        else:
+                            snow_ref_bt11um = 268.
+                        if rr_46 > 3.1 and snow_ref_bt11um < tbb_31 < 278.:
+                            if np.abs(ref_lat) > 20.:
+                                i_mark[row, col] = 200
+                                i_step[row, col] = 51
+                                i_tag = 2
+                                judge = False
+                            else:
+                                i_mark[row, col] = 200
+                                i_step[row, col] = 52
+                                i_tag = 2
+                                judge = False
+
+                    # !!!!   TESTING For SNOW ON LAND
+                    # !!!!   SNOW-4
+                    if judge:
+                        if dr_16 > 10. and 19.5 > ref_06 < tbb_31 < 276.15 and \
+                                1.5 < rr_46 < dt_02 < 15. and ref_02 > 26.:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 53
+                            i_tag = 2
+
+                    # !!!!   TESTING For SNOW ON LAND
+                    # !!!!   SNOW-5
+                    if judge:
+                        if ndsi_6 > 0.52 and ref_bt11um + 2. < tbb_31 < 278.:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 54
+                            i_tag = 2
+                        elif 0.12 < ndsi_6 < 0.52 and ref_bt11um < tbb_31 < 276.15 and \
+                                ndvis > 0.16 and ref_02 > 26.:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 55
+                            i_tag = 2
+                        else:
+                            pass
+
+                    # !!!!   TESTING For SNOW ON LAND
+                    # !!!!   Eliminate_Snow-1
+                    # !!!------------------------------------------------------------------------!!!
+                    # !!!!    IceCloud_Overlay_WaterCloud_LUT CLOUD-TEST For The REHANDLED DOT
+                    # !!!------------------------------------------------------------------------!!!
+                    if judge:
+                        if i_mark[row, col] == 200. and ref_dem < 3000 and \
+                                0.38 < ndsi_6 < ref_06 < 25. and \
+                                0.01 < ref_26 < 55. and \
+                                235. < tbb_31 < 275.:
+                            ice_cloud_sums = 0
+                            if ref_26 * 100 > y_r138_x_r164[np.round(ref_06 * 10), 2]:
+                                ice_cloud_sums += 1
+                            if ref_06 * 100. > y_r164_x_t11[np.round(tbb_31 * 10), 2]:
+                                ice_cloud_sums += 1
+                            if ref_06 * 100. > y_r164_x_r138[np.round(ref_26 * 10), 2]:
+                                ice_cloud_sums += 1
+                            if dt_12 * 100. > y_t11_m_t12_x_r164[np.round(ref_06 * 10.), 2]:
+                                ice_cloud_sums += 1
+                            if ice_cloud_sums > 2:
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 56
+                                i_tag = 2
+                                judge = False
+
+                    # !!!!   TESTING For SNOW ON LAND
+                    # !!!!   Eliminate_Snow-2
+                    # !!!------------------------------------------------------------------------!!!
+                    # !!!!    Monthly_SnowPackLine_LUT CLOUD-TEST For The REHANDLED DOT
+                    # !!!------------------------------------------------------------------------!!!
+                    if judge:
+                        if ref_lat > 0:
+                            i_nor_s = 1
+                        else:
+                            i_nor_s = 2
+                        if np.abs(r_mon_snow_line[np.round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                                (i_mark[row, col] == 200. or i_mark[row, col] == 100):
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 57
+                            i_tag = 2
+                            judge = False
+                    if judge:
+                        if i_mark[row, col] == 200:
+                            judge = False
+
+                    # !!!!   TESTING For CLOUD
+                    if judge:
+                        if ref_06 > 29. and \
+                                (ref_26 > 13.5 or (ref_26 > 7.5 and tbb_31 < ref_bt11um + 8)) and \
+                                ref_01 > 24.:
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 58
+                            i_tag = 2
+                            judge = False
+
+                    # !!!!   Mending TEST For Clear Land
+                    if judge:
+                        if (ndvis > 0.11 and tbb_31 < 280.) or dr_16 < 0. or ndsi_6 < -0.15:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 59
+                            i_tag = 2
+                            judge = False
+                    if judge:
+                        if ndvis > 0.11 and tbb_31 < 280.:
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 60
+                            i_tag = 2
+                            judge = False
+                    if judge:
+                        if dr_16 < 0.:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 61
+                            i_tag = 2
+                            judge = False
+                    if judge:
+                        if ndsi_6 < -0.15:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 62
+                            i_tag = 2
+                            judge = False
+
+                    # !!!!   Mending TEST For Clear Land and Cloud by Hai-T11
+                    if judge:
+                        if tbb_31 > 280.:
+                            if rr_46 < 1.35:
+                                i_mark[row, col] = 25
+                                i_step[row, col] = 66
+                                i_tag = 2
+                                judge = False
+                        else:
+                            if judge:
+                                if ref_dem >= 3300 and ref_01 >= 40. and ref_06 < 20. and \
+                                        tbb_20 < 295. and rr_46 > 1.3:
+                                    i_mark[row, col] = 200
+                                    i_step[row, col] = 67
+                                    i_tag = 2
+                                    judge = False
+                            if judge:
+                                if rr_46 < 1.4:
+                                    if ref_02 < 28.:
+                                        i_mark[row, col] = 25
+                                        i_step[row, col] = 68
+                                        i_tag = 2
+                                        judge = False
+                                    else:
+                                        i_mark[row, col] = 50
+                                        i_step[row, col] = 69
+                                        i_tag = 2
+                                        judge = False
+                    # !!!!   UNKNOWN TYPE
+                    if judge:
+                        i_mark[row, col] = 50
+                        i_step[row, col] = 69
+                        i_tag = 2
+            judge = True
+
 
 
 def main(in_file):
