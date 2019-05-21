@@ -959,6 +959,83 @@ def ndsi():
                         i_tag = 2
             judge = True
 
+            # !!!!   Eliminate_Snow-3
+
+            if judge:
+                if i_avalible == 1:
+                    # !!!------------------------------------------------------------------------!!!
+                    # !!!!    Monthly_SnowPackLine_LUT CLOUD-TEST For The REHANDLED DOT
+                    # !!!------------------------------------------------------------------------!!!
+                    if ref_lat > 0:
+                        i_nor_s = 1
+                    else:
+                        i_nor_s = 2
+                    if np.abs(r_mon_snow_line[np.round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                            (i_mark[row, col] == 200. or i_mark[row, col] == 100):
+                        i_mark[row, col] = 50
+                        i_step[row, col] = 57
+                        i_tag = 2
+                        judge = False
+                    # !!!!  Take Snow-on-Ice Pixel above Water-body as ICE
+                    if judge:
+                        if lsm == 0 and i_mark[row, col] == 200:
+                            i_mark[row, col] = 100
+
+                    if judge:
+                        if i_mark[row, col] == 1:
+                            if lsm == 0:
+                                if ref_02 < 18.:
+                                    i_mark[row, col] = 39
+                                if ref_02 > 19.:
+                                    i_mark[row, col] = 50
+                                if ref_26 > 1.5:
+                                    i_mark[row, col] = 50
+                                i_step[row, col] = 72
+                            else:
+                                if ndsi_6 > 0.27 and tbb_31 < 273.15 and 2.45 < dt_01 < 14.10:
+                                    i_mark[row, col] = 200
+                                    i_step[row, col] = 74
+                                else:
+                                    if 9.1 < ref_02 < 26.:
+                                        i_mark[row, col] = 25
+                                    if 1.1 < ref_02 < 8.:
+                                        i_mark[row, col] = 25
+                                    if ref_02 > 46.:
+                                        i_mark[row, col] = 50
+                                    if ref_26 > 10.:
+                                        i_mark[row, col] = 50
+                                    i_step[row, col] = 76
+
+            # !!!==========================================================================!!!
+            # !
+            # !     SE by Tree-Decision Algorithm after CM
+            # !
+            # !!!--------------------------------------------------------------------------!!!
+            # !!!!   Value = 0 :  cloudy
+            # !!!!   Value = 1 :  uncertain
+            # !!!!   Value = 2 :  probably clear
+            # !!!!   Value = 3 :  confident clear
+            # !!!--------------------------------------------------------------------------!!!
+            judge = True
+            if i_avalible == 1 and i_cm is not None:
+                if i_cm[row, col] == 0:
+                    if judge:
+                        if i_mark[row, col] == 1:
+                            i_mark[row, col] = 50
+                            i_step[row, col] = 80
+                            judge = False
+                if i_cm[row, col] == 3:
+                    if judge:
+                        if i_mark[row, col] == 50 or i_mark[row, col] == 1:
+                            i_mark[row, col] = 25
+                            i_step[row, col] = 82
+                            judge = False
+                    if judge:
+                        if i_mark[row, col] == 200 and i_tag < 3:
+                            i_mark[row, col] = 200
+                            i_step[row, col] = 83
+                            i_tag = 3
+                            judge = False
 
 
 def main(in_file):
