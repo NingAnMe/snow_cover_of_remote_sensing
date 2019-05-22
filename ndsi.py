@@ -6,9 +6,11 @@
 """
 from __future__ import print_function
 
+import os
 import sys
 
 import numpy as np
+from skimage import io as sk_io
 
 from initialize import load_yaml_file
 from load import ReadAhiL1
@@ -108,21 +110,21 @@ def ndsi():
     # Line:   Longitude from 65.0 to 145.0 (Step is 0.1 deg.)
     # Column: Month from Jan to Dec (Step is month)
     # Value:  Latitude (Unit is deg.)
-    # r_mon_snow_line = np.array([])  # Monthly CHN-SnowPackLine
+    r_mon_snow_line = np.array([])  # Monthly CHN-SnowPackLine
 
     # Used for judging low or water cloud by BT difference.
     # LookUpTable For T11-T12 (Saunders and Kriebel, 1988)
     # Line:   T11 from 250.0K to 310.0K (Step is 1.0K)
     # Column: Secant-SZA from 1.00 to 2.50 (Step is 0.01)
     # Value:  T11-T12 (Unit is K)
-    # delta_bt_lut = np.array([])  # LookUpTable for BT11-BT12
+    delta_bt_lut = np.array([])  # LookUpTable for BT11-BT12
 
     # Used for judging snow in forest by NDSI and NDVI.
     # LookUpTable For Snow in Forest , by NDVI-NDSI (Klein et al., 1998)
     # Line:   NDVI from 0.010 to 1.000 (Step is 0.01)
     # Column: NDSI from 0.01000 to 1.00000 (Step is 0.00001)
     # Value:  NDSI (Unit is null)
-    # y_ndsi_x_ndvi = np.array([])  # LookUpTable for NDSI-NDVI
+    y_ndsi_x_ndvi = np.array([])  # LookUpTable for NDSI-NDVI
 
     # !!!!! Four Variables below should be USED TOGETHER.
     # !! R138R164LUT,R164T11_LUT,R164R138LUT,T11mT12R164LUT
@@ -135,10 +137,10 @@ def ndsi():
     # !!        Column-R138R164LUT:    R138 from 0.0020 to 0.3000 (No Step)
     # !!     (4)Line-R164R138LUT:      R138 from 0.000 to 0.550 (Step is 0.001)
     # !!        Column-R164R138LUT:    R164 from 0.1500 to 0.3000 (No Step)
-    # y_r164_x_t11 = np.array([])  # LookUpTable For R164T11
-    # y_t11_m_t12_x_r164 = np.array([])  # LookUpTable For T11mT12R164
-    # y_r138_x_r164 = np.array([])  # LookUpTable For R138R164
-    # y_r164_x_r138 = np.array([])  # LookUpTable For R164R138
+    y_r164_x_t11 = np.array([])  # LookUpTable For R164T11
+    y_t11_m_t12_x_r164 = np.array([])  # LookUpTable For T11mT12R164
+    y_r138_x_r164 = np.array([])  # LookUpTable For R138R164
+    y_r164_x_r138 = np.array([])  # LookUpTable For R164R138
 
     # -------------------------------------------------------------------------
     # Used for Reference of 11um Minimum Brightness Temperature.
@@ -196,7 +198,6 @@ def ndsi():
     solar_zenith_max = float(a['SolarZenith_MAX'])
     inn_put_para_path = a['InnPut_ParaPath']
 
-    inn_put_root_bmp = a['InnPut_Root_Bmp']
     inn_put_root_l01 = a['InnPut_Root_L01']
     inn_put_root_l02 = a['InnPut_Root_L02']
     inn_put_root_l03 = a['InnPut_Root_L03']
@@ -204,6 +205,17 @@ def ndsi():
     inn_put_root_l12 = a['InnPut_Root_L12']
     inn_put_root_l13 = a['InnPut_Root_L13']
     inn_put_root_l14 = a['InnPut_Root_L14']
+
+    inn_put_file_l01 = os.path.join(inn_put_para_path, inn_put_root_l01)
+    inn_put_file_l02 = os.path.join(inn_put_para_path, inn_put_root_l02)
+    inn_put_file_l03 = os.path.join(inn_put_para_path, inn_put_root_l03)
+    inn_put_file_l11 = os.path.join(inn_put_para_path, inn_put_root_l11)
+    inn_put_file_l12 = os.path.join(inn_put_para_path, inn_put_root_l12)
+    inn_put_file_l13 = os.path.join(inn_put_para_path, inn_put_root_l13)
+    inn_put_file_l14 = os.path.join(inn_put_para_path, inn_put_root_l14)
+
+    delta_bt_lut = np.loadtxt(inn_put_file_l01, skiprows=1)[:, 1:]
+    print(r_mon_snow_line.shape)
 
     # -------------------------------------------------------------------------
     # Set Date Information
@@ -305,19 +317,19 @@ def ndsi():
 
     #  GET SensorAzimuth
     d_sensor_azimuth = read_ahi.get_sensor_azimuth()
-    index_valid = np.logical_and(d_sensor_azimuth > -360, d_sensor_azimuth < 360)
+    index_valid = np.logical_and(d_sensor_azimuth > -180, d_sensor_azimuth < 180)
     d_sensor_azimuth[index_valid] = d_sensor_azimuth[index_valid] / 180 * np.pi
     d_sensor_azimuth[~index_valid] = np.nan
 
     #  GET SolarZenith
     d_solar_zenith = read_ahi.get_solar_zenith()
-    index_valid = np.logical_and(d_solar_zenith > -360, d_solar_zenith < 360)
+    index_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < 90)
     d_solar_zenith[index_valid] = d_solar_zenith[index_valid] / 180 * np.pi
     d_solar_zenith[~index_valid] = np.nan
 
     #  GET SolarAzimuth
     d_solar_azimuth = read_ahi.get_solar_azimuth()
-    index_valid = np.logical_and(d_solar_azimuth > -360, d_solar_azimuth < 360)
+    index_valid = np.logical_and(d_solar_azimuth > -180, d_solar_azimuth < 180)
     d_solar_azimuth[index_valid] = d_solar_azimuth[index_valid] / 180 * np.pi
     d_solar_azimuth[~index_valid] = np.nan
 
@@ -590,26 +602,31 @@ def ndsi():
                         # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
                         # !!!!   TESTING For SNOW ON LAND
                         # !!!!   Eliminate_Snow-3
-                        if judge and (np.abs(r_mon_snow_line[np.round(ref_lon * 10, j_month, i_nor_s)]) > abs(ref_lat)
-                                      and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
-                            i_mark[row, col] = 50
-                            i_step[row, col] = 26
+                        if judge:
+                            if (np.abs(r_mon_snow_line[round((ref_lon + 180) * 10), int(j_month), i_nor_s]) >
+                                    abs(ref_lat) and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 26
+                                i_tag = 2
+                                judge = False
+                        if judge:
+                            if np.abs(ref_lat) < 30. and (i_mark[row, col] == 200 or i_mark[row, col] == 100):
+                                i_mark[row, col] = 50
+                                i_step[row, col] = 27
+                                i_tag = 2
+                                judge = False
+                        if judge:
+                            if i_mark[row, col] == 200 or i_mark[row, col] == 100:
+                                judge = False
+
+                    # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS( INNER LAND, Except Glint Area )
+                    # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS ( OCEAN, Except Glint Area )
+                    if judge:
+                        if ref_06 < 6. and dt_02 < 5. and rr_46 > 3.:
+                            i_mark[row, col] = 39
+                            i_step[row, col] = 28
                             i_tag = 2
                             judge = False
-                        if judge and (np.abs(ref_lat) < 30. and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
-                            i_mark[row, col] = 50
-                            i_step[row, col] = 27
-                            i_tag = 2
-                            judge = False
-                        if judge and (i_mark[row, col] == 200 or i_mark[row, col] == 100):
-                            judge = False
-                        # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS( INNER LAND, Except Glint Area )
-                        # !!!!   TESTING For WATER-BODY FROM UNKOWN PIXELS ( OCEAN, Except Glint Area )
-                    if judge and (ref_06 < 6. and dt_02 < 5. and rr_46 > 3.):
-                        i_mark[row, col] = 39
-                        i_step[row, col] = 28
-                        i_tag = 2
-                        judge = False
                     if judge:
                         i_mark[row, col] = 1
                         i_step[row, col] = 30
@@ -701,16 +718,16 @@ def ndsi():
                             pass
                         else:
                             test_dtb = tbb_31 - tbb_32
-                            i_test_t11 = np.round(tbb_31)
+                            i_test_t11 = round(tbb_31)
                             if i_test_t11 <= 250:
                                 i_test_t11 = 250
                             if i_test_t11 >= 310:
                                 i_test_t11 = 310
                             sec_sza = 100. / np.cos(a_satz)
-                            i_sec_sza = np.round(sec_sza)
+                            i_sec_sza = round(sec_sza)
                             if i_sec_sza >= 250:
                                 i_sec_sza = 250
-                            if test_dtb > delta_bt_lut(i_test_t11, i_sec_sza):
+                            if test_dtb > delta_bt_lut[round(i_test_t11 - 250), i_sec_sza]:
                                 i_mark[row, col] = 50
                                 i_step[row, col] = 42
                                 i_tag = 2
@@ -774,7 +791,7 @@ def ndsi():
                     # !!!------------------------------------------------------------------------!!!
                     if judge:
                         if ndvis > 0.1:
-                            if ndsi_6 > y_ndsi_x_ndvi[np.round(ndvis * 100, 2)] and \
+                            if ndsi_6 > y_ndsi_x_ndvi[round(ndvis * 100, 2)] and \
                                     tbb_31 < 277.:
                                 i_mark[row, col] = 200
                                 i_step[row, col] = 47
@@ -880,9 +897,9 @@ def ndsi():
                                 235. < tbb_31 < 275.:
                             ice_cloud_sums = 0
 
-                            if ref_06 * 100. > y_r164_x_t11[np.round(tbb_31 * 10), 2]:
+                            if ref_06 * 100. > y_r164_x_t11[round(tbb_31 * 10), 2]:
                                 ice_cloud_sums += 1
-                            if dt_12 * 100. > y_t11_m_t12_x_r164[np.round(ref_06 * 10.), 2]:
+                            if dt_12 * 100. > y_t11_m_t12_x_r164[round(ref_06 * 10.), 2]:
                                 ice_cloud_sums += 1
                             if ice_cloud_sums > 1:
                                 i_mark[row, col] = 50
@@ -896,13 +913,13 @@ def ndsi():
                     #             0.01 < ref_26 < 55. and \
                     #             235. < tbb_31 < 275.:
                     #         ice_cloud_sums = 0
-                    #         if ref_26 * 100 > y_r138_x_r164[np.round(ref_06 * 10), 2]:
+                    #         if ref_26 * 100 > y_r138_x_r164[round(ref_06 * 10), 2]:
                     #             ice_cloud_sums += 1
-                    #         if ref_06 * 100. > y_r164_x_t11[np.round(tbb_31 * 10), 2]:
+                    #         if ref_06 * 100. > y_r164_x_t11[round(tbb_31 * 10), 2]:
                     #             ice_cloud_sums += 1
-                    #         if ref_06 * 100. > y_r164_x_r138[np.round(ref_26 * 10), 2]:
+                    #         if ref_06 * 100. > y_r164_x_r138[round(ref_26 * 10), 2]:
                     #             ice_cloud_sums += 1
-                    #         if dt_12 * 100. > y_t11_m_t12_x_r164[np.round(ref_06 * 10.), 2]:
+                    #         if dt_12 * 100. > y_t11_m_t12_x_r164[round(ref_06 * 10.), 2]:
                     #             ice_cloud_sums += 1
                     #         if ice_cloud_sums > 2:
                     #             i_mark[row, col] = 50
@@ -920,7 +937,7 @@ def ndsi():
                             i_nor_s = 1
                         else:
                             i_nor_s = 2
-                        if np.abs(r_mon_snow_line[np.round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                        if np.abs(r_mon_snow_line[round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
                                 (i_mark[row, col] == 200. or i_mark[row, col] == 100):
                             i_mark[row, col] = 50
                             i_step[row, col] = 57
@@ -1014,7 +1031,7 @@ def ndsi():
                         i_nor_s = 1
                     else:
                         i_nor_s = 2
-                    if np.abs(r_mon_snow_line[np.round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                    if np.abs(r_mon_snow_line[round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
                             (i_mark[row, col] == 200. or i_mark[row, col] == 100):
                         i_mark[row, col] = 50
                         i_step[row, col] = 57
