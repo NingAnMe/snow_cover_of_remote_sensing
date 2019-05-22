@@ -10,7 +10,6 @@ import os
 import sys
 
 import numpy as np
-from skimage import io as sk_io
 
 from initialize import load_yaml_file
 from load import ReadAhiL1
@@ -110,14 +109,14 @@ def ndsi():
     # Line:   Longitude from 65.0 to 145.0 (Step is 0.1 deg.)
     # Column: Month from Jan to Dec (Step is month)
     # Value:  Latitude (Unit is deg.)
-    r_mon_snow_line = np.array([])  # Monthly CHN-SnowPackLine
+    # r_mon_snow_line = np.array([])  # Monthly CHN-SnowPackLine
 
     # Used for judging low or water cloud by BT difference.
     # LookUpTable For T11-T12 (Saunders and Kriebel, 1988)
     # Line:   T11 from 250.0K to 310.0K (Step is 1.0K)
     # Column: Secant-SZA from 1.00 to 2.50 (Step is 0.01)
     # Value:  T11-T12 (Unit is K)
-    delta_bt_lut = np.array([])  # LookUpTable for BT11-BT12
+    # delta_bt_lut = np.array([])  # LookUpTable for BT11-BT12
 
     # Used for judging snow in forest by NDSI and NDVI.
     # LookUpTable For Snow in Forest , by NDVI-NDSI (Klein et al., 1998)
@@ -215,7 +214,14 @@ def ndsi():
     inn_put_file_l14 = os.path.join(inn_put_para_path, inn_put_root_l14)
 
     delta_bt_lut = np.loadtxt(inn_put_file_l01, skiprows=1)[:, 1:]
-    print(r_mon_snow_line.shape)
+
+    r_mon_snow_line_temp = np.loadtxt(inn_put_file_l02, skiprows=1)[:, 1:]
+    r_mon_snow_line = np.zeros((3601, 12, 2))
+    r_mon_snow_line[:, :, 0] = r_mon_snow_line_temp[:, 0:24:2]
+    r_mon_snow_line[:, :, 1] = r_mon_snow_line_temp[:, 1:24:2]
+
+    y_ndsi_x_ndvi = np.loadtxt(inn_put_file_l03, skiprows=1)[:]
+    print(y_ndsi_x_ndvi.shape)
 
     # -------------------------------------------------------------------------
     # Set Date Information
@@ -596,9 +602,9 @@ def ndsi():
                     # !
                     if judge:
                         if ref_lat > 0:
-                            i_nor_s = 1
+                            i_nor_s = 0
                         else:
-                            i_nor_s = 2
+                            i_nor_s = 1
                         # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
                         # !!!!   TESTING For SNOW ON LAND
                         # !!!!   Eliminate_Snow-3
@@ -791,7 +797,7 @@ def ndsi():
                     # !!!------------------------------------------------------------------------!!!
                     if judge:
                         if ndvis > 0.1:
-                            if ndsi_6 > y_ndsi_x_ndvi[round(ndvis * 100, 2)] and \
+                            if ndsi_6 > y_ndsi_x_ndvi[round(ndvis * 100), 1] and \
                                     tbb_31 < 277.:
                                 i_mark[row, col] = 200
                                 i_step[row, col] = 47
@@ -934,10 +940,10 @@ def ndsi():
                     # !!!------------------------------------------------------------------------!!!
                     if judge:
                         if ref_lat > 0:
-                            i_nor_s = 1
+                            i_nor_s = 0
                         else:
-                            i_nor_s = 2
-                        if np.abs(r_mon_snow_line[round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                            i_nor_s = 1
+                        if np.abs(r_mon_snow_line[round((ref_lon + 180) * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
                                 (i_mark[row, col] == 200. or i_mark[row, col] == 100):
                             i_mark[row, col] = 50
                             i_step[row, col] = 57
@@ -1028,10 +1034,10 @@ def ndsi():
                     # !!!!    Monthly_SnowPackLine_LUT CLOUD-TEST For The REHANDLED DOT
                     # !!!------------------------------------------------------------------------!!!
                     if ref_lat > 0:
-                        i_nor_s = 1
+                        i_nor_s = 0
                     else:
-                        i_nor_s = 2
-                    if np.abs(r_mon_snow_line[round(ref_lon * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
+                        i_nor_s = 1
+                    if np.abs(r_mon_snow_line[round((ref_lon + 180) * 10), j_month, i_nor_s]) > np.abs(ref_lat) and \
                             (i_mark[row, col] == 200. or i_mark[row, col] == 100):
                         i_mark[row, col] = 50
                         i_step[row, col] = 57
