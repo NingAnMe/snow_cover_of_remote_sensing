@@ -221,7 +221,6 @@ def ndsi():
     r_mon_snow_line[:, :, 1] = r_mon_snow_line_temp[:, 1:24:2]
 
     y_ndsi_x_ndvi = np.loadtxt(inn_put_file_l03, skiprows=1)[:]
-    print(y_ndsi_x_ndvi.shape)
 
     # y_r138_x_r164 = np.loadtxt(inn_put_file_l11, skiprows=1)[:]
     # y_r164_x_t11 = np.loadtxt(inn_put_file_l12, skiprows=1)[:]
