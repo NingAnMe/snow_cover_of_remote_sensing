@@ -200,18 +200,18 @@ def ndsi():
     inn_put_root_l01 = a['InnPut_Root_L01']
     inn_put_root_l02 = a['InnPut_Root_L02']
     inn_put_root_l03 = a['InnPut_Root_L03']
-    inn_put_root_l11 = a['InnPut_Root_L11']
-    inn_put_root_l12 = a['InnPut_Root_L12']
-    inn_put_root_l13 = a['InnPut_Root_L13']
-    inn_put_root_l14 = a['InnPut_Root_L14']
+    # inn_put_root_l11 = a['InnPut_Root_L11']
+    # inn_put_root_l12 = a['InnPut_Root_L12']
+    # inn_put_root_l13 = a['InnPut_Root_L13']
+    # inn_put_root_l14 = a['InnPut_Root_L14']
 
     inn_put_file_l01 = os.path.join(inn_put_para_path, inn_put_root_l01)
     inn_put_file_l02 = os.path.join(inn_put_para_path, inn_put_root_l02)
     inn_put_file_l03 = os.path.join(inn_put_para_path, inn_put_root_l03)
-    inn_put_file_l11 = os.path.join(inn_put_para_path, inn_put_root_l11)
-    inn_put_file_l12 = os.path.join(inn_put_para_path, inn_put_root_l12)
-    inn_put_file_l13 = os.path.join(inn_put_para_path, inn_put_root_l13)
-    inn_put_file_l14 = os.path.join(inn_put_para_path, inn_put_root_l14)
+    # inn_put_file_l11 = os.path.join(inn_put_para_path, inn_put_root_l11)
+    # inn_put_file_l12 = os.path.join(inn_put_para_path, inn_put_root_l12)
+    # inn_put_file_l13 = os.path.join(inn_put_para_path, inn_put_root_l13)
+    # inn_put_file_l14 = os.path.join(inn_put_para_path, inn_put_root_l14)
 
     delta_bt_lut = np.loadtxt(inn_put_file_l01, skiprows=1)[:, 1:]
 
@@ -223,10 +223,10 @@ def ndsi():
     y_ndsi_x_ndvi = np.loadtxt(inn_put_file_l03, skiprows=1)[:]
     print(y_ndsi_x_ndvi.shape)
 
-    y_r138_x_r164 = np.loadtxt(inn_put_file_l11, skiprows=1)[:]
-    y_r164_x_t11 = np.loadtxt(inn_put_file_l12, skiprows=1)[:]
-    y_r164_x_r138 = np.loadtxt(inn_put_file_l13, skiprows=1)[:]
-    y_t11_m_t12_x_r164 = np.loadtxt(inn_put_file_l14, skiprows=1)[:]
+    # y_r138_x_r164 = np.loadtxt(inn_put_file_l11, skiprows=1)[:]
+    # y_r164_x_t11 = np.loadtxt(inn_put_file_l12, skiprows=1)[:]
+    # y_r164_x_r138 = np.loadtxt(inn_put_file_l13, skiprows=1)[:]
+    # y_t11_m_t12_x_r164 = np.loadtxt(inn_put_file_l14, skiprows=1)[:]
 
     # -------------------------------------------------------------------------
     # Set Date Information
