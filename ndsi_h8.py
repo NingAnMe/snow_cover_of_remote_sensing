@@ -17,7 +17,7 @@ from load import ReadAhiL1
 TEST = True
 
 
-def ndsi():
+def ndsi(in_file_l1, in_file_geo):
     # -------------------------------------------------------------------------
     # SolarZenith_MAX : MAXIMUM SOLAR ZENITH ANGLE, *1.0 DEGREE
     # solar_zenith_max = None
@@ -238,8 +238,7 @@ def ndsi():
     hour_min = 0
     hour_max = 23
 
-    in_file_h8 = r'D:\KunYu\hangzhou_anning\H8_L1\AHI8_OBI_2000M_NOM_20190426_2200.hdf'
-    read_ahi = ReadAhiL1(in_file_h8)
+    read_ahi = ReadAhiL1(in_file_l1, geo_file=in_file_geo)
     ymd = read_ahi.ymd
     hms = read_ahi.hms
     j_year = int(ymd[0:4])
@@ -1098,7 +1097,9 @@ def ndsi():
 def main(in_file):
     if in_file:
         pass
-    ndsi()
+    in_file_l1 = r'D:\KunYu\hangzhou_anning\H8_L1\AHI8_OBI_2000M_NOM_20190426_2200.hdf'
+    in_file_geo = r'D:\KunYu\hangzhou_anning\h8_2km_lut.hdf'
+    ndsi(in_file_l1, in_file_geo)
 
 
 # ######################## 程序全局入口 ##############################
