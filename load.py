@@ -19,6 +19,7 @@ class ReadAhiL1(ReadL1):
         super(ReadAhiL1, self).__init__(in_file, sensor)
         self.in_file = in_file
         self.geo_file = geo_file
+        print(self.geo_file)
         self.res = res
         self.channel_um = ['VIS0046', 'VIS0051', 'VIS0064', 'VIS0086',
                            'VIS0160', 'VIS0230', 'IRX0390', 'IRX0620',
@@ -80,12 +81,13 @@ class ReadAhiL1(ReadL1):
             name = 'NOMSunAzimuth'
             dataset = h5r.get(name)
             data = dataset[:].astype(np.float32)
-            index = np.logical_or(data < -180, data > 180)
-            data[index] = np.nan
 
             scale_factor = dataset.attrs['scale_factor']
             add_offset = dataset.attrs['add_offset']
             data = data * scale_factor + add_offset
+
+            index = np.logical_or(data < -180, data > 180)
+            data[index] = np.nan
             return data
 
     def get_solar_zenith(self):
@@ -93,17 +95,17 @@ class ReadAhiL1(ReadL1):
             name = 'NOMSunZenith'
             dataset = h5r.get(name)
             data = dataset[:].astype(np.float32)
-            index = np.logical_or(data < 0, data > 180)
-            data[index] = np.nan
 
             scale_factor = dataset.attrs['scale_factor']
             add_offset = dataset.attrs['add_offset']
             data = data * scale_factor + add_offset
+            index = np.logical_or(data < 0, data > 180)
+            data[index] = np.nan
             return data
 
     def get_latitude(self):
         if self.geo_file is not None:
-            with h5py.File(self.in_file, 'r') as h5r:
+            with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_latitude'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
@@ -116,7 +118,7 @@ class ReadAhiL1(ReadL1):
 
     def get_longitude(self):
         if self.geo_file is not None:
-            with h5py.File(self.in_file, 'r') as h5r:
+            with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_longitude'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
@@ -129,7 +131,7 @@ class ReadAhiL1(ReadL1):
 
     def get_land_sea_mask(self):
         if self.geo_file is not None:
-            with h5py.File(self.in_file, 'r') as h5r:
+            with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_land_mask'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
@@ -142,7 +144,7 @@ class ReadAhiL1(ReadL1):
 
     def get_sensor_azimuth(self):
         if self.geo_file is not None:
-            with h5py.File(self.in_file, 'r') as h5r:
+            with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_satellite_azimuth_angle'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
@@ -155,12 +157,23 @@ class ReadAhiL1(ReadL1):
 
     def get_sensor_zenith(self):
         if self.geo_file is not None:
-            with h5py.File(self.in_file, 'r') as h5r:
+            with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_satellite_zenith_angle'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
                 index = np.logical_or(data < 0, data > 180)
                 data[index] = np.nan
+
+            return data
+        else:
+            raise ValueError('GEO file is not exist!')
+
+    def get_height(self):
+        if self.geo_file is not None:
+            with h5py.File(self.geo_file, 'r') as h5r:
+                name = 'pixel_surface_elevation'
+                dataset = h5r.get(name)
+                data = dataset[:].astype(np.float32)
 
             return data
         else:
