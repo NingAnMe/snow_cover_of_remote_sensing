@@ -3,18 +3,29 @@
 """
 @Time    : 2019/5/9
 @Author  : AnNing
+
+# !!!!   VALUE = 255 : Fill Data--no Data expected For pixel
+# !!!!   VALUE = 254 : Saturated MODIS sensor detector
+# !!!!   VALUE = 240 : NATIONAL OR PROVINCIAL BOUNDARIES
+# !!!!   VALUE = 200 : Snow
+# !!!!   VALUE = 100 : Snow-Covered Lake Ice
+# !!!!   VALUE =  50 : Cloud Obscured
+# !!!!   VALUE =  39 : Ocean
+# !!!!   VALUE =  37 : Inland Water
+# !!!!   VALUE =  25 : Land--no snow detected
+# !!!!   VALUE =  11 : Darkness, terminator or polar
+# !!!!   VALUE =   1 : No Decision
+# !!!!   VALUE =   0 : Sensor Data Missing
+
 """
 from __future__ import print_function
 
 import os
 import sys
 
-import numpy as np
-
-from load import ReadAhiL1
 from hdf5 import write_hdf5_and_compress
 from initialize import load_yaml_file
-from ndvi import cal_ndvi
+from ndsi_h8 import ndsi
 
 
 SOLAR_ZENITH_MAX = 75
@@ -30,7 +41,7 @@ def main(yaml_file):
     print("main: interface file <<< {}".format(yaml_file))
 
     interface_config = load_yaml_file(yaml_file)
-    i_in_file = interface_config['PATH']['ipath']  # 待处理文件绝对路径（str）
+    i_in_files = interface_config['PATH']['ipath']  # 待处理文件绝对路径（str）
     i_out_file = interface_config['PATH']['opath']  # 输出文件绝对路径（str）
 
     # 如果输出文件已经存在，跳过
@@ -38,31 +49,23 @@ def main(yaml_file):
         print("***Warning***File is already exist, skip it: {}".format(i_out_file))
         return
 
-    cal_ndvi_h8(i_in_file, i_out_file)
+    in_file_l1, in_file_geo = i_in_files
+
+    cal_ndsi_h8(in_file_l1, in_file_geo, i_out_file)
 
 
-def cal_ndvi_h8(in_file, out_file):
+def cal_ndsi_h8(in_file, geo_file, out_file):
     """
     计算H8的植被指数
     :return:
     """
     print('<<< {}'.format(in_file))
-    loder = ReadAhiL1(in_file, res=2000)
-    r_vis = loder.get_channel_data('VIS0064')
-    r_nir = loder.get_channel_data('VIS0086')
-    t_tir = loder.get_channel_data('IRX1120')
+    print('<<< {}'.format(geo_file))
 
-    # 使用天顶角过滤数据
-    solar_zenith = loder.get_solar_zenith()
-    index_invalid = solar_zenith > SOLAR_ZENITH_MAX
-    r_vis[index_invalid] = np.nan
-    r_nir[index_invalid] = np.nan
-    t_tir[index_invalid] = np.nan
-
-    ndvi, flag = cal_ndvi(r_vis, r_nir, t_tir)
+    ndsi_data, ndsi_flag = ndsi(in_file, geo_file)
 
     # 写HDF5文件
-    result = {'NDVI': ndvi, 'Flag': flag}
+    result = {'NDSI': ndsi_data, 'Flag': ndsi_flag}
     write_hdf5_and_compress(out_file, result)
 
 
