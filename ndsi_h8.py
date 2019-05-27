@@ -621,6 +621,10 @@ def ndsi(in_file_l1, in_file_geo):
         # !!!---!!!---!!!      Notice  :  Test on Land ( LSM = 1 )       !!!---!!!---!!!
         # !!!!   TESTING For SNOW ON LAND
         # !!!!   Eliminate_Snow-3
+
+    i_nor_s = np.ones(data_shape, dtype=np.int8)
+
+
         if judge:
             if (np.abs(r_mon_snow_line[int(round((ref_lon + 180) * 10)), int(j_month), i_nor_s]) >
                     abs(ref_lat) and (i_mark[row, col] == 200 or i_mark[row, col] == 100)):
