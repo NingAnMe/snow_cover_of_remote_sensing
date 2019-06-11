@@ -14,11 +14,12 @@ from pb_drc_base import ReadL1
 
 
 class ReadAhiL1(ReadL1):
-    def __init__(self, in_file, res=2000, geo_file=None):
+    def __init__(self, in_file, res=2000, geo_file=None, cloud_file=None):
         sensor = 'AHI'
         super(ReadAhiL1, self).__init__(in_file, sensor)
         self.in_file = in_file
         self.geo_file = geo_file
+        self.cloud_file = cloud_file
         print(self.geo_file)
         self.res = res
         self.channel_um = ['VIS0046', 'VIS0051', 'VIS0064', 'VIS0086',
@@ -174,6 +175,17 @@ class ReadAhiL1(ReadL1):
                 name = 'pixel_surface_elevation'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
+
+            return data
+        else:
+            raise ValueError('GEO file is not exist!')
+
+    def get_cloudmask(self):
+        if self.cloud_file is not None:
+            with h5py.File(self.cloud_file, 'r') as h5r:
+                name = 'cloud_mask'
+                dataset = h5r.get(name)
+                data = dataset[:].astype(np.int8)
 
             return data
         else:
