@@ -23,9 +23,9 @@ from __future__ import print_function
 import os
 import sys
 
-from hdf5 import write_hdf5_and_compress
-from initialize import load_yaml_file
-from ndsi_h8 import ndsi
+from lib.hdf5 import write_hdf5_and_compress
+from lib.initialize import load_yaml_file
+from lib.ndsi_h8 import ndsi
 
 
 SOLAR_ZENITH_MAX = 75
@@ -49,35 +49,25 @@ def main(yaml_file):
         print("***Warning***File is already exist, skip it: {}".format(i_out_file))
         return
 
-    in_file_l1, in_file_geo = i_in_files
+    in_file_l1, in_file_geo, in_file_cloud = i_in_files
 
-    cal_ndsi_h8(in_file_l1, in_file_geo, i_out_file)
+    cal_ndsi_h8(in_file_l1, in_file_geo, in_file_cloud,  i_out_file)
 
 
-def cal_ndsi_h8(in_file, geo_file, out_file):
+def cal_ndsi_h8(in_file, geo_file, cloud_file, out_file):
     """
     计算H8的植被指数
     :return:
     """
     print('<<< {}'.format(in_file))
     print('<<< {}'.format(geo_file))
+    print('<<< {}'.format(cloud_file))
 
-    ndsi_data, ndsi_flag = ndsi(in_file, geo_file)
+    ndsi_data, ndsi_flag = ndsi(in_file, geo_file, cloud_file)
 
     # 写HDF5文件
     result = {'NDSI': ndsi_data, 'Flag': ndsi_flag}
     write_hdf5_and_compress(out_file, result)
-
-
-# if __name__ == '__main__':
-#     in_dir = r'D:\KunYu\hangzhou_anning\H8_L1'
-#     out_dir = r'D:\KunYu\hangzhou_anning\H8_NDVI'
-#     for filename in os.listdir(in_dir):
-#         if '2000' not in filename:
-#             continue
-#         in_file_ = os.path.join(in_dir, filename)
-#         out_file_ = os.path.join(out_dir, 'NDVI_' + filename)
-#         cal_ndvi_h8(in_file_, out_file_)
 
 
 # ######################## 程序全局入口 ##############################
@@ -99,3 +89,17 @@ if __name__ == "__main__":
     else:
         ARG1 = ARGS[0]
         main(ARG1)
+
+# if __name__ == '__main__':
+#     in_file_l1 = '/DATA3/HZ_HMW8/H08_L1/ORIGINAL/H08_HDF/20190613/AHI8_OBI_2000M_NOM_20190613_1150.hdf'
+#     in_file_geo = '/DATA3/HZ_HMW8/H08_L1/ORIGINAL/H08_GEO/H08_GEO_ORIGINAL_2000M.hdf5'
+#     in_file_cloud = None
+#     print('<<< {}'.format(in_file_l1))
+#     print('<<< {}'.format(in_file_geo))
+#     print('<<< {}'.format(in_file_cloud))
+#
+#     ndsi_data, ndsi_flag = ndsi(in_file_l1, in_file_geo, in_file_cloud)
+#
+#     # 写HDF5文件
+#     result = {'NDSI': ndsi_data, 'Flag': ndsi_flag}
+#     write_hdf5_and_compress('result/result.hdf', result)

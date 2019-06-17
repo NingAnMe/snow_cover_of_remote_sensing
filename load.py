@@ -5,11 +5,11 @@
 @Author  : AnNing
 """
 from __future__ import print_function
+
 import os
 
 import h5py
 import numpy as np
-
 from pb_drc_base import ReadL1
 
 
@@ -20,7 +20,6 @@ class ReadAhiL1(ReadL1):
         self.in_file = in_file
         self.geo_file = geo_file
         self.cloud_file = cloud_file
-        print(self.geo_file)
         self.res = res
         self.channel_um = ['VIS0046', 'VIS0051', 'VIS0064', 'VIS0086',
                            'VIS0160', 'VIS0230', 'IRX0390', 'IRX0620',
@@ -85,7 +84,7 @@ class ReadAhiL1(ReadL1):
 
             scale_factor = dataset.attrs['scale_factor']
             add_offset = dataset.attrs['add_offset']
-            data = data * scale_factor + add_offset
+            data = data * scale_factor + add_offset - 180
 
             index = np.logical_or(data < -180, data > 180)
             data[index] = np.nan
@@ -136,8 +135,8 @@ class ReadAhiL1(ReadL1):
                 name = 'pixel_land_mask'
                 dataset = h5r.get(name)
                 data = dataset[:].astype(np.float32)
-                index = np.logical_or(data == -999, data <= 0)
-                data[index] = np.nan
+                # index = np.logical_or(data == -999, data <= 0)
+                # data[index] = np.nan
 
             return data
         else:
@@ -148,7 +147,7 @@ class ReadAhiL1(ReadL1):
             with h5py.File(self.geo_file, 'r') as h5r:
                 name = 'pixel_satellite_azimuth_angle'
                 dataset = h5r.get(name)
-                data = dataset[:].astype(np.float32)
+                data = dataset[:].astype(np.float32) - 180
                 index = np.logical_or(data < -180, data > 180)
                 data[index] = np.nan
 
@@ -189,7 +188,8 @@ class ReadAhiL1(ReadL1):
 
             return data
         else:
-            raise ValueError('GEO file is not exist!')
+            return
+            # raise ValueError('Cloud file is not exist!')
 
 
 class LoadH8Ndvi:
