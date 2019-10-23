@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python 
 # -*- coding: utf-8 -*-
-"""
-@Time    : 2019/5/8
-@Author  : AnNing
-"""
+# @Time    : 2019/10/23 14:57
+# @Author  : AnNing
+
 from __future__ import print_function
 
 import os
@@ -30,7 +29,7 @@ class ReadAhiL1(ReadL1):
         # AHI8_OBI_2000M_NOM_20190426_2200.hdf
         file_name = os.path.basename(self.in_file)
         self.ymd = file_name.split('_')[4]
-        self.hms = file_name.split('_')[5] + '00'
+        self.hms = '{}00'.format(file_name.split('_')[5])
 
     def set_data_shape(self):
         with h5py.File(self.in_file, 'r') as h5r:
@@ -189,24 +188,3 @@ class ReadAhiL1(ReadL1):
             return data
         else:
             return
-            # raise ValueError('Cloud file is not exist!')
-
-
-class LoadH8Ndvi:
-    def __init__(self, in_file, res=2000):
-        self.in_file = in_file
-        self.res = res
-
-    def get_ndvi(self):
-        with h5py.File(self.in_file, 'r') as h5r:
-            name = 'NDVI'
-            dataset = h5r.get(name)
-            data = dataset[:]
-            return data
-
-    def get_flag(self):
-        with h5py.File(self.in_file, 'r') as h5r:
-            name = 'Flag'
-            dataset = h5r.get(name)
-            data = dataset[:]
-            return data

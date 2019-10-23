@@ -3,16 +3,15 @@
 from datetime import datetime
 import os
 import re
-import sys
 
 import h5py
 
-from PB.pb_io import attrs2dict
-from PB.pb_sat import planck_r2t
+from pb_io import attrs2dict
+from pb_sat import planck_r2t
 from pb_drc_base import ReadL1
 import numpy as np
 
-__description__ = u'MERSI传感器读取类'
+__description__ = 'MERSI传感器读取类'
 __author__ = 'wangpeng'
 __date__ = '2018-08-28'
 __version__ = '1.0.0_beat'
@@ -77,7 +76,7 @@ class ReadMersiL1(ReadL1):
         use filename  set self.ymd self.hms
         """
         file_name = os.path.basename(self.in_file)
-        pat = u'\w{4}_\w{5}_\w{4}_L1_(\d{8})_(\d{4})_\w{5}_MS.HDF$'
+        pat = '\w{4}_\w{5}_\w{4}_L1_(\d{8})_(\d{4})_\w{5}_MS.HDF$'
         g = re.match(pat, file_name)
         if g:
             self.ymd = g.group(1)
@@ -170,7 +169,7 @@ class ReadMersiL1(ReadL1):
         return clm_file
 
     def get_cloudmask(self):
-
+        data = None
         clm_flag = np.full(self.data_shape, -999)
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
@@ -241,7 +240,7 @@ class ReadMersiL1(ReadL1):
             mask = (z67 == 0b00) & (z12 == 0b11) & (z4 == 0b0) & (z0 == 0b1)
             idx = np.where(mask)
             clm_flag[idx] = 8
-            print clm_flag
+            print(clm_flag)
             data = clm_flag
 
         return data
@@ -266,7 +265,7 @@ class ReadMersiL1(ReadL1):
                     vmax = 10000
 
                     # 逐个通道处理
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
 
                         if i < 4:
@@ -295,7 +294,7 @@ class ReadMersiL1(ReadL1):
                     vmax = 10000
 
                     # 逐个通道处理
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
 
                         if i < 4:
@@ -324,7 +323,7 @@ class ReadMersiL1(ReadL1):
                     vmin = 0
                     vmax = 65000
                     # 逐个通道处理
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
                         if i < 4:
                             k = i
@@ -377,7 +376,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(K, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -392,7 +391,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(ary_vis_coeff, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -421,7 +420,7 @@ class ReadMersiL1(ReadL1):
 
                     # 逐个通道处理
                     s = self.data_shape
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
 
                         if i < 19:
@@ -463,7 +462,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(K, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -478,7 +477,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(ary_vis_coeff, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -507,7 +506,7 @@ class ReadMersiL1(ReadL1):
 
                     # 逐个通道处理
                     s = self.data_shape
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
 
                         if i < 19:
@@ -549,7 +548,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(K, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -564,7 +563,7 @@ class ReadMersiL1(ReadL1):
                 values = np.array([0, 1, 0])
                 K = np.insert(ary_vis_coeff, 4, values, 0)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     # k0
                     channel_data = np.full(
@@ -593,7 +592,7 @@ class ReadMersiL1(ReadL1):
 
                     # 逐个通道处理
                     s = self.data_shape
-                    for i in xrange(self.channels):
+                    for i in range(self.channels):
                         band = 'CH_{:02d}'.format(i + 1)
 
                         if i < 19:
@@ -640,7 +639,7 @@ class ReadMersiL1(ReadL1):
                     scales = 100.
 
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     if 'CH_05' in band:
                         continue
@@ -662,7 +661,7 @@ class ReadMersiL1(ReadL1):
                 k2 = self.get_k2()
 
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     if i < 19:
 
@@ -692,7 +691,7 @@ class ReadMersiL1(ReadL1):
             if self.satellite in satellite_type1:
                 dn = self.get_dn()
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     if 'CH_05' in band:
                         data[band] = dn[band] / 100.
@@ -713,7 +712,7 @@ class ReadMersiL1(ReadL1):
                     b = np.concatenate((ary_b1, ary_b2))
 
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
 
                     if i >= 19:
@@ -796,9 +795,9 @@ class ReadMersiL1(ReadL1):
                 rads = self.get_rad()
                 central_wave_numbers = self.get_central_wave_number()
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
-                    if band in rads.keys():
+                    if band in list(rads.keys()):
                         k0 = tbb_k0[band]
                         k1 = tbb_k1[band]
                         central_wave_number = central_wave_numbers[band]
@@ -834,7 +833,7 @@ class ReadMersiL1(ReadL1):
                         data_pre = data_pre.astype(np.float32)
                         data_pre[invalid_index] = np.nan
                         # 逐个通道处理
-                        for i in xrange(self.channels):
+                        for i in range(self.channels):
                             band = 'CH_{:02d}'.format(i + 1)
                             channel_data = np.full(
                                 self.data_shape, np.nan, dtype = np.float32)
@@ -842,7 +841,7 @@ class ReadMersiL1(ReadL1):
                             data[band] = channel_data
 
                     except Exception as e:
-                        print str(e)
+                        print(str(e))
 
             elif self.satellite in satellite_type2:
                 with h5py.File(self.in_file, 'r') as h5r:
@@ -855,9 +854,9 @@ class ReadMersiL1(ReadL1):
                 data_pre[invalid_index] = np.nan
 
                 s0 = data_pre.shape[1]
-                print data_pre.shape
+                print(data_pre.shape)
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     channel_data = np.full(
                         self.data_shape, np.nan, dtype = np.float32)
@@ -900,14 +899,14 @@ class ReadMersiL1(ReadL1):
                         data_pre = data_pre.astype(np.float32)
                         data_pre[invalid_index] = np.nan
                         # 逐个通道处理
-                        for i in xrange(self.channels):
+                        for i in range(self.channels):
                             band = 'CH_{:02d}'.format(i + 1)
                             channel_data = np.full(
                                 self.data_shape, np.nan, dtype = np.float32)
                             channel_data[:] = data_pre[i, :].reshape(-1, 1)
                             data[band] = channel_data
                     except Exception as e:
-                        print str(e)
+                        print(str(e))
 
             elif self.satellite in satellite_type2:
                 with h5py.File(self.in_file, 'r') as h5r:
@@ -921,7 +920,7 @@ class ReadMersiL1(ReadL1):
                 # 逐个通道处理
                 s0 = data_pre.shape[1]
                 # 逐个通道处理
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     band = 'CH_{:02d}'.format(i + 1)
                     channel_data = np.full(
                         self.data_shape, np.nan, dtype = np.float32)
@@ -948,6 +947,7 @@ class ReadMersiL1(ReadL1):
         """
         return longitude
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -976,6 +976,7 @@ class ReadMersiL1(ReadL1):
         """
         return latitude
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1004,6 +1005,7 @@ class ReadMersiL1(ReadL1):
         """
         return land_sea_mask
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1032,6 +1034,7 @@ class ReadMersiL1(ReadL1):
         """
         return land_cover
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1060,6 +1063,7 @@ class ReadMersiL1(ReadL1):
         """
         return sensor_azimuth
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1098,6 +1102,7 @@ class ReadMersiL1(ReadL1):
         """
         return sensor_zenith
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1131,6 +1136,7 @@ class ReadMersiL1(ReadL1):
         """
         return solar_azimuth
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1170,6 +1176,7 @@ class ReadMersiL1(ReadL1):
         """
         return solar_zenith
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B']
             satellite_type2 = ['FY3C', 'FY3D']
@@ -1204,6 +1211,7 @@ class ReadMersiL1(ReadL1):
         """
         return from 1970-01-01 00:00:00 seconds
         """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B', 'FY3C', 'FY3D']
             if self.satellite in satellite_type1:
@@ -1225,11 +1233,12 @@ class ReadMersiL1(ReadL1):
         return data
 
     def get_central_wave_number(self):
-        '''
+        """
         return 中心波数
         central_wave_number
         wn(cm-1) = 10 ^ 7 / wave_length(nm)
-        '''
+        """
+        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B', 'FY3C']
             satellite_type2 = ['FY3D']
@@ -1257,7 +1266,7 @@ class ReadMersiL1(ReadL1):
             if self.satellite in satellite_type1:
                 dtype = {
                     'names': ('wave_length', 'response'), 'formats': ('f4', 'f4')}
-                for i in xrange(self.channels):
+                for i in range(self.channels):
                     k = i + 1
                     band = "CH_{:02d}".format(k)
                     file_name = '{}_{}_SRF_CH{:02d}_Pub.txt'.format(
@@ -1290,14 +1299,14 @@ if __name__ == '__main__':
     L1File = 'D:/data/MERSI/FY3D_MERSI_GBAL_L1_20181001_0020_1000M_MS.HDF'
     L1File = 'D:/data/MERSI/FY3D_MERSI_GBAL_L1_20190825_1755_1000M_MS.HDF'
     mersi = ReadMersiL1(L1File)
-    print mersi.satellite  # 卫星名
-    print mersi.sensor  # 传感器名
-    print mersi.ymd  # L1 文件年月日 YYYYMMDD
-    print mersi.hms  # L1 文件时分秒 HHMMSS
-    print mersi.resolution  # 分辨率
-    print mersi.channels  # 通道数量
-    print mersi.data_shape
-    print type(mersi.file_attr)
+    print(mersi.satellite)  # 卫星名
+    print(mersi.sensor)  # 传感器名
+    print(mersi.ymd)  # L1 文件年月日 YYYYMMDD
+    print(mersi.hms)  # L1 文件时分秒 HHMMSS
+    print(mersi.resolution)  # 分辨率
+    print(mersi.channels)  # 通道数量
+    print(mersi.data_shape)
+    print(type(mersi.file_attr))
 
     def print_data_status(datas, name = None):
         data_shape = datas.shape
@@ -1305,100 +1314,100 @@ if __name__ == '__main__':
         data_max = np.nanmax(datas)
         data_mean = np.nanmean(datas)
         data_median = np.nanmedian(datas)
-        print "{}: shape: {}, min: {}, max: {}, mean: {}, median: {}".format(
-            name, data_shape, data_min, data_max, data_mean, data_median)
+        print("{}: shape: {}, min: {}, max: {}, mean: {}, median: {}".format(
+            name, data_shape, data_min, data_max, data_mean, data_median))
 
     def print_channel_data(datas):
         if not isinstance(datas, dict):
             return
-        keys = list(datas.viewkeys())
+        keys = list(datas.keys())
         keys.sort()
         for t_channel_name in keys:
             channel_data = datas[t_channel_name]
             print_data_status(channel_data, name = t_channel_name)
-#     print 'cloud mask'
-#     t_data = mersi.get_cloudmask()
-#     print 'dn:'
-#     t_data = mersi.get_dn()
-#     print_channel_data(t_data)
-#     print 'k0:'
-#     t_data = mersi.get_k0()
-#     print_channel_data(t_data)
-#     print 'k1:'
-#     t_data = mersi.get_k1()
-#     print_channel_data(t_data)
-#     print 'k2:'
-#     t_data = mersi.get_k2()
-#     print_channel_data(t_data)
-#     print 'ref:'
-#     t_data = mersi.get_ref()
-#     print_channel_data(t_data)
-#
-#     print 'rad:'
-#     t_data = mersi.get_rad()
-#     print_channel_data(t_data)
+    print('cloud mask')
+    t_data = mersi.get_cloudmask()
+    print('dn:')
+    t_data = mersi.get_dn()
+    print_channel_data(t_data)
+    print('k0:')
+    t_data = mersi.get_k0()
+    print_channel_data(t_data)
+    print('k1:')
+    t_data = mersi.get_k1()
+    print_channel_data(t_data)
+    print('k2:')
+    t_data = mersi.get_k2()
+    print_channel_data(t_data)
+    print('ref:')
+    t_data = mersi.get_ref()
+    print_channel_data(t_data)
 
-#     print 'tbb:'
-#     t_data = mersi.get_tbb()
-#     print_channel_data(t_data)
-#     print t_data['CH_24'][1000, 1000]
+    print('rad:')
+    t_data = mersi.get_rad()
+    print_channel_data(t_data)
 
-#     print 'sv:'
-#     t_data = mersi.get_sv()
-#     print_channel_data(t_data)
-#
-#     print 'bb:'
-#     t_data = mersi.get_bb()
-#     print_channel_data(t_data)
-#
-#     print 'longitude:'
-#     t_data = mersi.get_longitude()
-#     print_data_status(t_data)
-#
-#     print 'latitude:'
-#     t_data = mersi.get_latitude()
-#     print_data_status(t_data)
+    print('tbb:')
+    t_data = mersi.get_tbb()
+    print_channel_data(t_data)
+    print(t_data['CH_24'][1000, 1000])
 
-#     print 'land_sea_mask:'
-#     t_data = mersi.get_land_sea_mask()
-#     print_data_status(t_data)
-#
-#     print 'land_cover:'
-#     t_data = mersi.get_land_cover()
-#     print_data_status(t_data)
+    print('sv:')
+    t_data = mersi.get_sv()
+    print_channel_data(t_data)
 
-#     print 'sensor_azimuth:'
-#     t_data = mersi.get_sensor_azimuth()
-#     print_data_status(t_data)
-#     print 'sensor_zenith:'
-#     t_data = mersi.get_sensor_zenith()
-#     print_data_status(t_data)
-#     print 'solar_azimuth:'
-#     t_data = mersi.get_solar_azimuth()
-#     print_data_status(t_data)
-#     print 'solar_zenith:'
-#     t_data = mersi.get_solar_zenith()
-#     print_data_status(t_data)
-#     print 'timestamp:'
-#     t_data = mersi.get_timestamp()
-#     print_data_status(t_data)
+    print('bb:')
+    t_data = mersi.get_bb()
+    print_channel_data(t_data)
 
-#     print 'get_spectral_response:'
-#     wavenums, wave_spec = mersi.get_spectral_response()
-#     print_channel_data(wavenums)
-#     print_channel_data(wave_spec)
+    print('longitude:')
+    t_data = mersi.get_longitude()
+    print_data_status(t_data)
 
-    print 'ref:'
+    print('latitude:')
+    t_data = mersi.get_latitude()
+    print_data_status(t_data)
+
+    print('land_sea_mask:')
+    t_data = mersi.get_land_sea_mask()
+    print_data_status(t_data)
+
+    print('land_cover:')
+    t_data = mersi.get_land_cover()
+    print_data_status(t_data)
+
+    print('sensor_azimuth:')
+    t_data = mersi.get_sensor_azimuth()
+    print_data_status(t_data)
+    print('sensor_zenith:')
+    t_data = mersi.get_sensor_zenith()
+    print_data_status(t_data)
+    print('solar_azimuth:')
+    t_data = mersi.get_solar_azimuth()
+    print_data_status(t_data)
+    print('solar_zenith:')
+    t_data = mersi.get_solar_zenith()
+    print_data_status(t_data)
+    print('timestamp:')
+    t_data = mersi.get_timestamp()
+    print_data_status(t_data)
+
+    print('get_spectral_response:')
+    wavenums, wave_spec = mersi.get_spectral_response()
+    print_channel_data(wavenums)
+    print_channel_data(wave_spec)
+
+    print('ref:')
     t_data = mersi.get_ref()
     for key in sorted(t_data.keys()):
-        print "%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key]))
+        print("%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key])))
 
-    print 'rad:'
+    print('rad:')
     t_data = mersi.get_rad()
     for key in sorted(t_data.keys()):
-        print "%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key]))
+        print("%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key])))
 
-    print 'tbb:'
+    print('tbb:')
     t_data = mersi.get_tbb()
     for key in sorted(t_data.keys()):
-        print "%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key]))
+        print("%s, %0.6f %0.6f" % (key, np.nanmin(t_data[key]), np.nanmax(t_data[key])))

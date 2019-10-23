@@ -12,7 +12,7 @@ import sys
 import numpy as np
 
 from initialize import load_yaml_file
-from load import ReadAhiL1
+from ndvi_h8 import ReadAhiL1
 
 TEST = True
 
