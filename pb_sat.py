@@ -18,9 +18,9 @@ version:      1.0
 
 
 def solar_zen(yy, mm, dd, hh, xlon, xlat):
-    '''
+    """
     calculate solar zenith
-    '''
+    """
     stime = datetime.strptime('%s%s%s' % (yy, mm, dd), '%Y%m%d')
     xj = int(stime.strftime('%j'))
     # xj = getJulianDay(yy, mm, dd)
@@ -51,7 +51,7 @@ def solar_zen(yy, mm, dd, hh, xlon, xlat):
 
 
 def getasol6s(ymd, hms, lons, lats):
-    '''
+    """
     Function:    getasol6s
     Description: 计算太阳天顶角
     author:      陈林提供C源码( wangpeng转)
@@ -60,7 +60,7 @@ def getasol6s(ymd, hms, lons, lats):
     Output:
     Return:      太阳天顶角弧度类型(修改为度类型 2018年4月28日)
     Others:
-    '''
+    """
     # jays(儒略日,当年的第几天), GMT(世界时 小时浮点计数方式 )
     dtime = datetime.strptime('%s %s' % (ymd, hms), '%Y%m%d %H%M%S')
     jday = int(dtime.strftime('%j'))
@@ -97,10 +97,10 @@ def getasol6s(ymd, hms, lons, lats):
 
 
 def sun_earth_dis_correction(ymd):
-    '''
+    """
     Instantaneous distance between earth and sun correction factor ==(d0/d)^2
     ymd: yyyymmdd
-    '''
+    """
 
     stime = datetime.strptime(ymd, '%Y%m%d')
     jjj = int(stime.strftime('%j'))
@@ -110,9 +110,9 @@ def sun_earth_dis_correction(ymd):
 
 
 def sun_glint_cal_old(obs_a, obs_z, sun_a, sun_z):
-    '''
+    """
     计算太阳耀斑角
-    '''
+    """
 #      https://svn.ssec.wisc.edu/repos/cloud_team_cr/trunk/viewing_geometry_module.f90
 #      glint_angle = cos ( sol_zen * DTOR ) * cos ( sen_zen * DTOR )
 #                +   sin ( sol_zen * DTOR ) * sin ( sen_zen * DTOR )
@@ -146,9 +146,9 @@ def sun_glint_cal_old(obs_a, obs_z, sun_a, sun_z):
 
 
 def sun_glint_cal(obs_a, obs_z, sun_a, sun_z):
-    '''
+    """
     计算太阳耀斑角
-    '''
+    """
     ti = np.deg2rad(sun_z)
     tv = np.deg2rad(obs_z)
     phi = np.deg2rad(sun_a - obs_a)
@@ -181,12 +181,12 @@ def arrayMin(array_a, b):
 
 
 def spec_interp(WaveNum1, WaveRad1, WaveNum2):
-    '''
+    """
     IN, WaveNum1:原光谱的波数(cm-1)
     IN, WaveRad1:原光谱的响应值（0-1）
     IN, WaveNum2:目标光谱的波数
     Rturn, Wave_rad2：目标谱的响应值（0-1）
-    '''
+    """
 
     # 插值插值，过滤掉最大值的千分之9的数据
     maxRad = np.max(WaveRad1)
@@ -197,15 +197,15 @@ def spec_interp(WaveNum1, WaveRad1, WaveNum2):
 
 
 def spec_convolution(WaveNum, WaveRad, RealRad):
-    '''
+    """
     IN, WaveNum: 光谱的波数(cm-1)
     IN, WaveRad: 光谱的响应值（0-1）
     IN, RealRad: 光谱的真实响应值
     return , S 卷积后的响应值
-    '''
+    """
     # RealRad的光谱信息必须和WaveNum,WaveRad的长度一致
     if WaveNum.shape[-1] != WaveRad.shape[-1] != RealRad.shape[-1]:
-        print 'The spectral response length must be the same'
+        print('The spectral response length must be the same')
         return -1
 
     # 默认对最后一维进行卷积 numpy.trapz(y, x=None, dx=1.0, axis=-1)
@@ -216,14 +216,14 @@ def spec_convolution(WaveNum, WaveRad, RealRad):
 
 
 def planck_r2t_test(r, w):
-    '''
+    """
     function radiance2tbb: convert radiance data into brightness temperature (i.e., equivalent blackbody temperature)
     r: spectral radiance data in w/m2/sr/um  单位(mW/(m2.cm-1.sr))
     w: wavelength in micro  Equiv Mid_wn (cm-1)  等效中心波数
     a: TbbCorr_Coeff A  (典型温度黑体辐亮度以及通道亮温修正系数)
     b: TbbCorr_Coeff B
     return: reture value, brightness temperature in K (absolute temperature)
-    '''
+    """
     c1 = 1.1910439e-16  # 1.19104*10-5 mW/m2.sr.cm-1
     c2 = 1.438769e-2  # 1.43877 K/cm-1
     vs = 1.0E+2 * w
@@ -262,11 +262,11 @@ def planck_r2t_test(r, w):
 
 
 def planck_r2t(R, W):
-    '''
+    """
     plank for IRAS rad2tb
     R: radiance
     W: center wavenums
-    '''
+    """
     c1 = 0.000011910659
     c2 = 1.438833
     a1 = c2 * W
@@ -277,12 +277,12 @@ def planck_r2t(R, W):
 
 
 def planck_t2r(T, W):
-    '''
+    """
     plank for IRAS tb2rad
     T : TBB
     W : center wavenums
 
-    '''
+    """
     c1 = 0.000011910659
     c2 = 1.438833
     a1 = c1 * W ** 3
@@ -292,12 +292,12 @@ def planck_t2r(T, W):
 
 
 def radiance2tbb(r, cnw):
-    '''
+    """
     function radiance2tbb: convert radiance data into brightness temperature (i.e., equivalent blackbody temperature)
     r: spectral radiance data in w/m2/sr/um
     w: wavelength in micro
     return: reture value, brightness temperature in K (absolute temperature)
-    '''
+    """
 
 #     cwn = [2.647409E+03, 2.511760E+03, 2.517908E+03, 2.462442E+03,
 #            2.248296E+03, 2.209547E+03, 1.474262E+03, 1.361626E+03,
@@ -330,22 +330,22 @@ def radiance2tbb(r, cnw):
 
 
 def is_ad_orbit(lats):
-    '''
+    """
     lats: input latitude  range: -90 ~ 90.
 
-    '''
+    """
     diff_list = []
     if not isinstance(lats, np.ndarray):
-        print 'lats must be ndarray'
+        print('lats must be ndarray')
     if lats.ndim != 2:
-        print 'lats shape must be 2'
+        print('lats shape must be 2')
 
     # change 0-180
     lats = lats + 90.
     row, col = lats.shape
 #     print row, col
     mcol = col // 2
-    for i in xrange(row - 1):
+    for i in range(row - 1):
         diff = lats[i + 1, mcol] - lats[i, mcol]
         diff_list.append(diff)
     diff_array = np.array(diff_list)
@@ -357,18 +357,3 @@ def is_ad_orbit(lats):
         return 'A'
     else:
         return 'D'
-
-if __name__ == '__main__':
-    #     print solar_zen(2018, 3, 26, 00, 105.37498, 81.54135)
-    #     print getasol6s('20120124', '064605', 77.12, 70.61)
-    print sun_glint_cal(333, 99, 333, 13)
-    print sun_glint_cal(153, 99, 153, 13)
-#     print sun_glint_cal(90, 90, -90, 90)
-    print sun_glint_cal_old(153, 99, 153, 13)
-    print sun_glint_cal_old(-27, 99, -27, 13)
-#     print sun_glint_cal_old(90, 90, -90, 90)
-#     print sun_glint_cal(359, 179, 359, 179)
-#     print sun_glint_cal_old(359, 179, 359, 179)
-    #     tt = planck_r2t(np.array([-0.003225115, -1]), 2634.359)
-
-    pass

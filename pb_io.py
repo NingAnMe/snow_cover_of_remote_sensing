@@ -35,10 +35,10 @@ def make_sure_path_exists(path):
 
 
 def find_file(path, reg):
-    '''
+    """
     path: 要遍历的目录
     reg: 符合条件的文件
-    '''
+    """
     FileLst = []
     try:
         lst = os.walk(path)
@@ -57,10 +57,10 @@ def find_file(path, reg):
 
 
 def path_replace_ymd(path, ymd):
-    '''
+    """
     path:替换路径中的日期 ,path中%YYYY%MM%DD%JJJ 等关键字会被ymd日期实例
     ymd: yyyymmdd  (20180101)
-    '''
+    """
     # 转成datetime类型
     ymd = datetime.strptime(ymd, '%Y%m%d')
     yy = ymd.strftime('%Y')
