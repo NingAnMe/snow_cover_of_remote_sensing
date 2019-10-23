@@ -110,7 +110,6 @@ def ndsi(i_datetime=None,
     # tbb_20 = None  # 3.750 um : TBB, Temperature
     # tbb_31 = None  # 11.030 um : TBB, Temperature
     # tbb_32 = None  # 12.020 um : TBB, Temperature
-
     # -------------------------------------------------------------------------
     # ndvis = None  # R2-R1/R2+R1: R0.86,R0.65
     # ndsi_6 = None  # R4-R6/R4+R6: R0.55,R1.64

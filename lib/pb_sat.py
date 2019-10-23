@@ -6,17 +6,6 @@ from datetime import datetime
 import numpy as np
 
 
-__author__ = 'wangpeng'
-
-'''
-FileName:     pb_sat.py
-Description:  配置文件处理的函数
-Author:       wangpeng
-Date:         2018-04-28
-version:      1.0
-'''
-
-
 def solar_zen(yy, mm, dd, hh, xlon, xlat):
     """
     calculate solar zenith
