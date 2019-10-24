@@ -13,14 +13,16 @@ import numpy as np
 from initialize import load_yaml_file
 
 DUBUG = True
+row = 210
+col = 56
 
 # Set Date Information
 year_min = 2000
 year_max = 2048
 month_min = 1
 month_max = 12
-date_min = 1
-data_max = 31
+day_min = 1
+day_max = 31
 hour_min = 0
 hour_max = 23
 
@@ -217,8 +219,10 @@ def ndsi(i_datetime=None,
     print('Program : Make SNC')
 
     # -------------------------------------------------------------------------
-    path = os.path.abspath(os.path.dirname(__file__))
-    name_list_swath_snc = os.path.join(path, 'ndsi_cfg.yaml')
+    lib_path = os.path.abspath(os.path.dirname(__file__))
+    cfg_path = os.path.join(os.path.dirname(lib_path), 'cfg')
+    aid_path = os.path.join(os.path.dirname(lib_path), 'aid')
+    name_list_swath_snc = os.path.join(cfg_path, 'ndsi_cfg.yaml')
     print('Config file : {}'.format(name_list_swath_snc))
 
     a = load_yaml_file(name_list_swath_snc)
@@ -233,13 +237,13 @@ def ndsi(i_datetime=None,
     inn_put_root_l13 = a['InnPut_Root_L13']
     inn_put_root_l14 = a['InnPut_Root_L14']
 
-    inn_put_file_l01 = os.path.join(path, inn_put_para_path, inn_put_root_l01)
-    inn_put_file_l02 = os.path.join(path, inn_put_para_path, inn_put_root_l02)
-    inn_put_file_l03 = os.path.join(path, inn_put_para_path, inn_put_root_l03)
-    inn_put_file_l11 = os.path.join(path, inn_put_para_path, inn_put_root_l11)
-    inn_put_file_l12 = os.path.join(path, inn_put_para_path, inn_put_root_l12)
-    inn_put_file_l13 = os.path.join(path, inn_put_para_path, inn_put_root_l13)
-    inn_put_file_l14 = os.path.join(path, inn_put_para_path, inn_put_root_l14)
+    inn_put_file_l01 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l01)
+    inn_put_file_l02 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l02)
+    inn_put_file_l03 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l03)
+    inn_put_file_l11 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l11)
+    inn_put_file_l12 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l12)
+    inn_put_file_l13 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l13)
+    inn_put_file_l14 = os.path.join(aid_path, inn_put_para_path, inn_put_root_l14)
 
     delta_bt_lut = np.loadtxt(inn_put_file_l01, skiprows=1)[:, 1:]
 
@@ -257,17 +261,21 @@ def ndsi(i_datetime=None,
 
     # -------------------------------------------------------------------------
 
-    j_year, j_month, j_date, j_hour = i_datetime.strptime('%Y_%m_%d_%H').split('_')
+    def get_ymdh(date):
+        year, month, day, hour = date.strftime('%Y_%m_%d_%H').split('_')
+        return int(year), int(month), int(day), int(hour)
+
+    j_year, j_month, j_day, j_hour = get_ymdh(i_datetime)
 
     if (not year_min <= j_year <= year_max) or (not month_min <= j_month <= month_max) or \
-            (not date_min <= j_date <= data_max) or (not hour_min <= j_hour <= hour_max):
+            (not day_min <= j_day <= day_max) or (not hour_min <= j_hour <= hour_max):
         raise ValueError('Wrongly Time Setting. Please Retry:{}'.format(i_datetime))
 
     # -------------------------------------------------------------------------
     # Calculating the Number of Xun (means ten day).
-    if j_date <= 10:
+    if j_day <= 10:
         i2_xun_num = 3 * (j_month - 1) + 1
-    elif j_date > 20:
+    elif j_day > 20:
         i2_xun_num = 3 * (j_month - 1) + 3
     else:
         i2_xun_num = 3 * (j_month - 1) + 2
@@ -339,7 +347,7 @@ def ndsi(i_datetime=None,
 
     #  GET SensorAzimuth
     d_sensor_azimuth = sensor_azimuth
-    index_valid = np.logical_and(d_sensor_azimuth > -180, d_sensor_azimuth < 180)
+    index_valid = np.logical_and(d_sensor_azimuth > -360, d_sensor_azimuth < 360)
     d_sensor_azimuth[index_valid] = d_sensor_azimuth[index_valid] / 180 * np.pi
     d_sensor_azimuth[~index_valid] = np.nan
 
@@ -351,7 +359,7 @@ def ndsi(i_datetime=None,
 
     #  GET SolarAzimuth
     d_solar_azimuth = solar_azimuth
-    index_valid = np.logical_and(d_solar_azimuth > -180, d_solar_azimuth < 180)
+    index_valid = np.logical_and(d_solar_azimuth > -360, d_solar_azimuth < 360)
     d_solar_azimuth[index_valid] = d_solar_azimuth[index_valid] / 180 * np.pi
     d_solar_azimuth[~index_valid] = np.nan
 
@@ -638,7 +646,43 @@ def ndsi(i_datetime=None,
     #     dt_38 = tbb_20 - tbb_29
     # else:
     #     dt_38 = None
+    # ##############################################################################
+    # ！！！！！！！！！！！！！！！！！！ DEBUG ！！！！！！！！！！！！！！！！！！
+    # ##############################################################################
+    if DUBUG:
+        print('row=', row)
+        print('col=', col)
+        print('ref_01=', ref_01[row, col])
+        print('ref_02=', ref_02[row, col])
+        print('ref_03=', ref_03[row, col])
+        print('ref_04=', ref_04[row, col])
+        print('ref_06=', ref_06[row, col])
+        print('ref_07=', ref_07[row, col])
+        print('ref_26=', ref_26[row, col])
+        print('tbb_20=', tbb_20[row, col])
+        print('tbb_31=', tbb_31[row, col])
+        print('longitude=', longitude[row, col])
+        print('latitude=', latitude[row, col])
+        print('sensor_zenith=', sensor_zenith[row, col])
+        print('sensor_azimuth=', sensor_azimuth[row, col])
+        print('solar_zenith=', solar_zenith[row, col])
+        print('solar_azimuth=', solar_azimuth[row, col])
+        print('dems=', dems[row, col])
+        print('sea_land_mask=', sea_land_mask[row, col])
+        print('ndvis=', ndvis[row, col])
+        print('ndsi_6=', ndsi_6[row, col])
+        print('ndsi_7=', ndsi_7[row, col])
+        print('dr_16=', dr_16[row, col])
+        print('dr_17=', dr_17[row, col])
+        print('dt_01=', dt_01[row, col])
+        print('dt_02=', dt_02[row, col])
+        print('dt_12=', dt_12[row, col])
+        print('rr_21=', rr_21[row, col])
+        print('rr_46=', rr_46[row, col])
 
+    # ##############################################################################
+    # ！！！！！！！！！！！！！！！！！！开始处理
+    # ##############################################################################
     i_tag[idx_available] = 1
 
     judge = np.full(data_shape, True, dtype=np.bool)
@@ -690,13 +734,16 @@ def ndsi(i_datetime=None,
     # !!!!   CERTAIN CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
     # !!!!   Temperature_Test by Referential BT11 Threshold
     # !!!!   Cirrus_Test by Referential R1.38 Threshold
-    if no_none((ref_lat, tbb_31, ref_26, ref_bt11um)):
-        idx_ = np.logical_and.reduce((np.abs(ref_lat) > 42, ref_lat < 60, tbb_31 < np.min([ref_bt11um + 5., 245.15])))
+    if no_none((ref_lat_abs, tbb_31, ref_26, ref_bt11um)):
+        ref_bt11um_copy = ref_bt11um.copy()
+        ref_bt11um_copy[ref_bt11um_copy + 5 > 254.15] = 245.15
+        idx_ = np.logical_and.reduce((ref_lat_abs > 42, ref_lat < 60, tbb_31 < ref_bt11um_copy))
         idx_ = np.logical_or(ref_26 > 7.5, idx_)
         idx_ = np.logical_and(idx_ocean, judge, idx_)
         i_mark[idx_] = 50
         i_step[idx_] = 22
         i_tag[idx_] = 2
+        del ref_bt11um_copy
 
     # !!!!   CERTAIN CLOUD-2 (Middle or Low Level Cloud, Except Glint Area)
     if no_none((ref_06, tbb_20, dt_02, rr_46, ndsi_6)):
@@ -891,7 +938,7 @@ def ndsi(i_datetime=None,
     # !!!!   CERTAIN CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
     # !!!!   Temperature_Test by Referential BT11 Threshold
     # !!!!   Cirrus_Test by Referential R1.38 Threshold
-    if no_none((ref_dem, ref_bt11um)):
+    if no_none((ref_dem, ref_bt11um, tbb_31, ref_lat_abs)):
         compared_t11_hai_lat_a = ref_bt11um + 8. - ref_dem / 1000.
         compared_t11_hai_lat_b = 250. - ref_dem / 1000.
         compared_t11_hai_lat = np.minimum(compared_t11_hai_lat_a, compared_t11_hai_lat_b)
@@ -915,8 +962,9 @@ def ndsi(i_datetime=None,
     # !!!!   CLOUD-1 (High Cloud ; Ice Cloud ; Cold Cloud)
     if no_none((ref_dem, ref_26, dt_01, tbb_31, ndsi_6, ref_bt11um)):
         compared_ref26 = 14.5 + ref_dem / 500.
-        idx_ = (ref_26 > compared_ref26 and dt_01 > 21.) or \
-               (ref_26 > compared_ref26 - 7. and tbb_31 < ref_bt11um + 8. and ndsi_6 > -0.11)
+        idx_ = np.logical_or(np.logical_and(ref_26 > compared_ref26, dt_01 > 21),
+                             np.logical_and.reduce((
+                                 ref_26 > compared_ref26 - 7, tbb_31 < ref_bt11um + 8, ndsi_6 > -0.11)))
         i_mark[idx_] = 50
         i_step[idx_] = 44
         i_tag[idx_] = 2
@@ -982,7 +1030,7 @@ def ndsi(i_datetime=None,
     # !!!!   SNOW-1
     if no_none((ref_dem, ndsi_6, tbb_20, tbb_31, dt_01, ref_01, ref_06, ref_26)):
         idx_ = np.logical_and.reduce((ref_dem > 2000, ndsi_6 > 0.33, tbb_20 > 266.15, tbb_20 < 285.15,
-                                      tbb_31 > 264.15, tbb_31 < 275.15, dt_01 > 6.5, dt_01 > 21,
+                                      tbb_31 > 264.15, tbb_31 < 275.15, dt_01 > 6.5, dt_01 < 21,
                                       ref_01 > 41, ref_01 < 79, ref_06 > 12.5, ref_06 < 24.5,
                                       ref_26 > 9.5, ref_26 < 17))
         i_mark[idx_] = 200
@@ -1011,7 +1059,7 @@ def ndsi(i_datetime=None,
     if no_none((ref_bt11um, ref_lat, ref_lat_abs, ref_dem, rr_46, tbb_31)):
         snow_ref_bt11um = np.full(data_shape, 268, dtype=np.float32)
         snow_ref_bt11um[ref_lat > 40] = ref_bt11um[ref_lat > 40] + 5.
-        idx_ = np.logical_or(ref_lat_abs > 20, ref_lat_abs < 40)
+        idx_ = np.logical_and(ref_lat_abs > 20, ref_lat_abs < 40)
         snow_ref_bt11um[idx_] = ref_bt11um[idx_] + 18 - ref_dem[idx_] / 800
         idx_1 = np.logical_and.reduce((idx_land, judge, rr_46 > 3.1, snow_ref_bt11um < tbb_31, tbb_31 < 278))
         idx_ = np.logical_and(idx_1, ref_lat_abs > 20)
@@ -1062,19 +1110,31 @@ def ndsi(i_datetime=None,
     # !!!!    IceCloud_Overlay_WaterCloud_LUT CLOUD-TEST For The REHANDLED DOT
     # !!!------------------------------------------------------------------------!!!
     if no_none((ref_dem, ref_06, tbb_31, ref_26)):
-        idx_ = np.logical_and.reduce((i_mark == 200, ref_dem < 3000, ndsi_6 > 0.38, ref_06 < 10, ref_06 < 25,
+        idx_ = np.logical_and.reduce((i_mark == 200, ref_dem < 3000, ndsi_6 > 0.38, ref_06 > 10, ref_06 < 25,
                                       ref_26 > 0.01, ref_26 < 55, tbb_31 > 235, tbb_31 < 275))
         ice_cloud_sums = np.zeros(data_shape, dtype=np.int8)
+
         idx_1 = np.logical_and(idx_, np.isfinite(ref_06))
-        idx_2 = ref_26[idx_1] * 100 > y_r138_x_r164[int(round(ref_06[idx_1] * 10)), 1]
+        y_r138_x_r164_first = y_r138_x_r164[0, 0]
+        idx_2 = ref_26[idx_1] * 100 > y_r138_x_r164[
+            (np.round(ref_06[idx_1] * 10) - y_r138_x_r164_first).astype(np.int32), 1]
         ice_cloud_sums[idx_1][idx_2] += 1
-        idx_2 = dt_12[idx_1] * 100. > y_t11_m_t12_x_r164[int(round(ref_06[idx_1] * 10.)), 1]
+
+        y_t11_m_t12_x_r164_first = y_t11_m_t12_x_r164[0, 0]
+        idx_2 = dt_12[idx_1] * 100. > y_t11_m_t12_x_r164[
+            (np.round(ref_06[idx_1] * 10) - y_t11_m_t12_x_r164_first).astype(np.int32), 1]
         ice_cloud_sums[idx_1][idx_2] += 1
+
         idx_1 = np.logical_and(idx_, np.isfinite(tbb_31))
-        idx_2 = ref_06[idx_1] * 100 > y_r164_x_t11[int(round(tbb_31[idx_1] * 10)), 1]
+        y_r164_x_t11_first = y_r164_x_t11[0, 0]
+        idx_2 = ref_06[idx_1] * 100 > y_r164_x_t11[
+            (np.round(tbb_31[idx_1] * 10) - y_r164_x_t11_first).astype(np.int32), 1]
         ice_cloud_sums[idx_1][idx_2] += 1
+
         idx_1 = np.logical_and(idx_, np.isfinite(ref_26))
-        idx_2 = ref_06[idx_1] * 100 > y_r164_x_r138[int(round(ref_26[idx_1] * 10)), 1]
+        y_r164_x_r138_first = y_r164_x_r138[0, 0]
+        idx_2 = ref_06[idx_1] * 100 > y_r164_x_r138[
+            (np.round(ref_26[idx_1] * 10) - y_r164_x_r138_first).astype(np.int32), 1]
         ice_cloud_sums[idx_1][idx_2] += 1
         idx_ = ice_cloud_sums > 2
         i_mark[idx_] = 50
@@ -1106,17 +1166,17 @@ def ndsi(i_datetime=None,
         del _condition, idx_
 
     # !!!!   TESTING For CLOUD
-    if no_none((ref_26, tbb_31, ref_bt11um, ref_01)):
-        idx_ = np.logical_and.reduce((ref_01 > 29, ref_01 > 24,
+    if no_none((ref_26, tbb_31, ref_bt11um, ref_01, ref_06)):
+        idx_ = np.logical_and.reduce((ref_06 > 29, ref_01 > 24,
                                       np.logical_or(ref_26 > 13.5,
-                                                    np.logical_and(ref_26 > 7.5, tbb_31 > ref_bt11um + 8))))
+                                                    np.logical_and(ref_26 > 7.5, tbb_31 < ref_bt11um + 8))))
         i_mark[idx_] = 50
         i_step[idx_] = 58
         i_tag[idx_] = 2
         judge[idx_] = False
         del idx_
 
-    # !!!!   Mending TEST For Clear Land
+    # !!!!   Mending TEST For Clear Land  # 原代码也注释了这段代码
     # if no_none((ndvis, tbb_31, dr_16, ndsi_6)):
     #     idx_ = np.logical_and(ndvis > 0.11, tbb_31 < 280)
     #     idx_ = np.logical_or.reduce((idx_, dr_16 < 0, ndsi_6 < -0.15))
@@ -1182,7 +1242,7 @@ def ndsi(i_datetime=None,
         judge[idx_] = False
 
     # !!!!   UNKNOWN TYPE
-    idx_ = np.logical_and.reduce((idx_land, judge, i_tag == 2))
+    idx_ = np.logical_and.reduce((idx_land, judge))
     i_mark[idx_] = 1
     i_step[idx_] = 99
     i_tag[idx_] = 2
@@ -1211,14 +1271,14 @@ def ndsi(i_datetime=None,
     #     i_mark[idx_] = 50
     #     i_step[idx_] = 74
     #
-    # idx_1 = np.logical_and.reduce(idx_available, lsm == 1, i_mark == 1)
+    idx_1 = np.logical_and.reduce((idx_available, lsm == 1, i_mark == 1))
     # judge = np.full(data_shape, True, dtype=np.bool)
     #
-    # if no_none((ndsi_6, tbb_31, dt_01)):
-    #     idx_ = np.logical_and.reduce((idx_1, ndsi_6 > 0.27, tbb_31 < 273.15, dt_01 > 2.45, dt_01 < 14.10))
-    #     i_mark[idx_] = 200
-    #     i_step[idx_] = 75
-    #     judge[idx_] = False
+    if no_none((ndsi_6, tbb_31, dt_01)):
+        idx_ = np.logical_and.reduce((idx_1, ndsi_6 > 0.27, tbb_31 < 273.15, dt_01 > 2.45, dt_01 < 14.10))
+        i_mark[idx_] = 200
+        i_step[idx_] = 75
+        judge[idx_] = False
     #
     # if ref_02 is not None:
     #     idx_ = np.logical_and.reduce((idx_1, judge, ref_02 > 9.1, ref_02 < 26))
@@ -1249,18 +1309,21 @@ def ndsi(i_datetime=None,
     # !!!!   Value = 2 :  probably clear
     # !!!!   Value = 3 :  confident clear
     # !!!--------------------------------------------------------------------------!!!
-    if i_cm is not None:
-        idx_ = np.logical_and.reduce((i_available == 1, i_cm == 1, i_mark == 1))
-        i_mark[idx_] = 50
-        i_step[idx_] = 80
+    # if i_cm is not None:
+    #     idx_ = np.logical_and.reduce((i_available == 1, i_cm == 1, i_mark == 1))
+    #     i_mark[idx_] = 50
+    #     i_step[idx_] = 80
+    #
+    #     idx_ = np.logical_or(i_mark == 50, i_mark == 1)
+    #     idx_ = np.logical_and.reduce((i_available, i_cm == 3, idx_))
+    #     i_mark[idx_] = 25
+    #     i_step[idx_] = 82
+    #
+    #     idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
+    #     i_mark[idx_] = 200
+    #     i_step[idx_] = 83
 
-        idx_ = np.logical_or(i_mark == 50, i_mark == 1)
-        idx_ = np.logical_and.reduce((i_available, i_cm == 3, idx_))
-        i_mark[idx_] = 25
-        i_step[idx_] = 82
-
-        idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
-        i_mark[idx_] = 200
-        i_step[idx_] = 83
-
+    if DUBUG:
+        print('i_mark=', i_mark[row, col])
+        print('i_step=', i_step[row, col])
     return i_mark, i_step

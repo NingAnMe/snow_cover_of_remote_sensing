@@ -239,7 +239,6 @@ class ReadMersiL1(ReadL1):
             mask = (z67 == 0b00) & (z12 == 0b11) & (z4 == 0b0) & (z0 == 0b1)
             idx = np.where(mask)
             clm_flag[idx] = 8
-            print(clm_flag)
             data = clm_flag
 
         return data
@@ -1023,6 +1022,35 @@ class ReadMersiL1(ReadL1):
 
             # 过滤无效值
             invalid_index = np.logical_or(data_pre < 0, data_pre > 7)
+            data_pre = data_pre.astype(np.float32)
+            data_pre[invalid_index] = np.nan
+            data = data_pre
+
+        return data
+
+    def get_height(self):
+        """
+        return land_sea_mask
+        """
+        data = None
+        if self.resolution == 1000:
+            satellite_type1 = ['FY3A', 'FY3B']
+            satellite_type2 = ['FY3C', 'FY3D']
+            if self.satellite in satellite_type1:
+                # s = self.data_shape  # FY3A数据不规整，存在 1810,2048 的数据，取 1800,2048
+                with h5py.File(self.in_file, 'r') as h5r:
+                    data_pre = h5r.get('/DEM')[:]
+            elif self.satellite in satellite_type2:
+                geo_file = self.__get_geo_file()
+                with h5py.File(geo_file, 'r') as h5r:
+                    data_pre = h5r.get('/Geolocation/DEM')[:]
+
+            else:
+                raise ValueError(
+                    'Cant read this satellite`s data.: {}'.format(self.satellite))
+
+            # 过滤无效值
+            invalid_index = np.logical_or(data_pre < -400, data_pre > 10000)
             data_pre = data_pre.astype(np.float32)
             data_pre[invalid_index] = np.nan
             data = data_pre
