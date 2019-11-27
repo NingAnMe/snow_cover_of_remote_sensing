@@ -1097,8 +1097,8 @@ def ndsi(i_datetime=None,
         del idx_
 
     if no_none((ndsi_6, tbb_31, ndvis, ref_02)):
-        idx_ = np.logical_and.reduce((idx_land, judge, ndsi_6 > 0.12, ndsi_6 < 0.52, tbb_31 > ref_bt11um, tbb_31 < 276.15,
-                                      ndvis > 0.16, ref_02 > 26))
+        idx_ = np.logical_and.reduce((idx_land, judge, ndsi_6 > 0.12, ndsi_6 < 0.52, tbb_31 > ref_bt11um,
+                                      tbb_31 < 276.15, ndvis > 0.16, ref_02 > 26))
         i_mark[idx_] = 200
         i_step[idx_] = 55
         i_tag[idx_] = 2
@@ -1193,14 +1193,14 @@ def ndsi(i_datetime=None,
         i_tag[idx_] = 2
         judge[idx_] = False
 
-    if no_none((dr_16)):
+    if no_none((dr_16, )):
         idx_ = np.logical_and.reduce((idx_land, judge, dr_16 < 0))
         i_mark[idx_] = 25
         i_step[idx_] = 61
         i_tag[idx_] = 2
         judge[idx_] = False
 
-    if no_none((ndsi_6)):
+    if no_none((ndsi_6, )):
         idx_ = np.logical_and.reduce((idx_land, judge, ndsi_6 < -0.15))
         i_mark[idx_] = 25
         i_step[idx_] = 62
@@ -1309,19 +1309,19 @@ def ndsi(i_datetime=None,
     # !!!!   Value = 2 :  probably clear
     # !!!!   Value = 3 :  confident clear
     # !!!--------------------------------------------------------------------------!!!
-    # if i_cm is not None:
-    #     idx_ = np.logical_and.reduce((i_available == 1, i_cm == 1, i_mark == 1))
-    #     i_mark[idx_] = 50
-    #     i_step[idx_] = 80
-    #
-    #     idx_ = np.logical_or(i_mark == 50, i_mark == 1)
-    #     idx_ = np.logical_and.reduce((i_available, i_cm == 3, idx_))
-    #     i_mark[idx_] = 25
-    #     i_step[idx_] = 82
-    #
-    #     idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
-    #     i_mark[idx_] = 200
-    #     i_step[idx_] = 83
+    if i_cm is not None:
+        idx_ = np.logical_and.reduce((i_available == 1, i_cm == 1, i_mark == 1))
+        i_mark[idx_] = 50
+        i_step[idx_] = 80
+
+        idx_ = np.logical_or(i_mark == 50, i_mark == 1)
+        idx_ = np.logical_and.reduce((i_available, i_cm == 3, idx_))
+        i_mark[idx_] = 25
+        i_step[idx_] = 82
+
+        idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
+        i_mark[idx_] = 200
+        i_step[idx_] = 83
 
     if DUBUG:
         print('i_mark=', i_mark[row, col])
