@@ -88,7 +88,7 @@ def nsdi_orbit_fy3d(l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir):
 
     write_out_file(out_file, result, full_value=0)
     return {
-                "data": {"aerosol": out_dir},
+                "data": {"out_file": [out_file]},
                 "status": SUCCESS,
                 "statusInfo": {
                     "message": "完成",

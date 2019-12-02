@@ -7,5 +7,3 @@ DEBUG = True
 SUCCESS = 0
 WARNING = 1
 ERROR = 2
-
-ROOT_PATH = '/mnt/hgfs/Projects/imapp_fy3dl2/ndsi'

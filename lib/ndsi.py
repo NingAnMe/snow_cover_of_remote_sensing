@@ -10,7 +10,7 @@ import os
 
 import numpy as np
 
-from initialize import load_yaml_file
+from lib.initialize import load_yaml_file
 
 DUBUG = True
 row = 210
