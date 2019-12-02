@@ -25,7 +25,7 @@ def nsdi_orbit_fy3d(l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir):
     print("<<< yyyymmddhhmmss: {}".format(yyyymmddhhmmss))
     print("<<< out_dir       : {}".format(out_dir))
 
-    data_loader = ReadMersiL1(l1_1000m)
+    data_loader = ReadMersiL1(l1_1000m, geo_file=l1_geo, cloud_file=l1_cloudmask)
     ymd = data_loader.ymd
     hms = data_loader.hms
     i_datetime = datetime.strptime(ymd+hms, '%Y%m%d%H%M%S')

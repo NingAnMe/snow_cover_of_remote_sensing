@@ -41,9 +41,11 @@ class ReadMersiL1(ReadL1):
     红外通道：
     """
 
-    def __init__(self, in_file):
+    def __init__(self, in_file, geo_file=None, cloud_file=None):
         sensor = 'MERSI'
         super(ReadMersiL1, self).__init__(in_file, sensor)
+        self.geo_file = geo_file
+        self.cloud_file = cloud_file
 
     def set_resolution(self):
         """
@@ -138,34 +140,40 @@ class ReadMersiL1(ReadL1):
         """
         return 定位文件
         """
-        if self.resolution == 1000:
-            satellite_type1 = ['FY3C', 'FY3D']
-            if self.satellite in satellite_type1:
-                geo_file = self.in_file[:-12] + 'GEO1K_MS.HDF'
+        if self.geo_file is not None:
+            return self.geo_file
+        else:
+            if self.resolution == 1000:
+                satellite_type1 = ['FY3C', 'FY3D']
+                if self.satellite in satellite_type1:
+                    geo_file = self.in_file[:-12] + 'GEO1K_MS.HDF'
+                else:
+                    raise ValueError(
+                        'Cant read this satellite`s data.: {}'.format(self.satellite))
             else:
                 raise ValueError(
-                    'Cant read this satellite`s data.: {}'.format(self.satellite))
-        else:
-            raise ValueError(
-                "Cant handle this resolution: ".format(self.resolution))
-        return geo_file
+                    "Cant handle this resolution: ".format(self.resolution))
+            return geo_file
 
     def __get_clm_file(self):
         """
         return 定位文件
         """
-        if self.resolution == 1000:
-            satellite_type1 = ['FY3C', 'FY3D']
-            if self.satellite in satellite_type1:
-                clm_file = self.in_file.replace(
-                    'GBAL_L1', 'ORBT_L2_CLM_MLT_NUL')
+        if self.cloud_file is not None:
+            return self.cloud_file
+        else:
+            if self.resolution == 1000:
+                satellite_type1 = ['FY3C', 'FY3D']
+                if self.satellite in satellite_type1:
+                    clm_file = self.in_file.replace(
+                        'GBAL_L1', 'ORBT_L2_CLM_MLT_NUL')
+                else:
+                    raise ValueError(
+                        'Cant read this satellite`s data.: {}'.format(self.satellite))
             else:
                 raise ValueError(
-                    'Cant read this satellite`s data.: {}'.format(self.satellite))
-        else:
-            raise ValueError(
-                "Cant handle this resolution: ".format(self.resolution))
-        return clm_file
+                    "Cant handle this resolution: ".format(self.resolution))
+            return clm_file
 
     def get_cloudmask(self):
         data = None
@@ -1234,11 +1242,92 @@ class ReadMersiL1(ReadL1):
 
         return data
 
+    def get_hight(self):
+        """
+        return hight
+        """
+        if self.resolution == 1000:
+            satellite_type1 = ['FY3A', 'FY3B']
+            satellite_type2 = ['FY3C', 'FY3D']
+            if self.satellite in satellite_type1:
+                # s = self.data_shape  # FY3A数据不规整，存在 1810,2048 的数据，取 1800,2048
+                with h5py.File(self.in_file, 'r') as h5r:
+                    data_pre = h5r.get('/DEM')[:]
+
+                vmin = -400
+                vmax = 10000
+            elif self.satellite in satellite_type2:
+                geo_file = self.__get_geo_file()
+                with h5py.File(geo_file, 'r') as h5r:
+                    data_pre = h5r.get('/Geolocation/DEM')[:]
+
+                vmin = -400
+                vmax = 10000
+
+            else:
+                raise ValueError(
+                    'Cant read this satellite`s data.: {}'.format(self.satellite))
+
+            # 过滤无效值
+            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            data_pre = data_pre.astype(np.float32)
+            data_pre[invalid_index] = np.nan
+            data = data_pre
+            return data
+
+    def get_day_night_flag(self):
+        """
+        Nadir Day(0) Night(1) or Mix(2) Flag
+        return day_night_flag
+        """
+        if self.resolution == 1000:
+            satellite_type1 = ['FY3A', 'FY3B']
+            satellite_type2 = ['FY3C', 'FY3D']
+            if self.satellite in satellite_type1:
+                return
+            elif self.satellite in satellite_type2:
+                geo_file = self.__get_geo_file()
+                with h5py.File(geo_file, 'r') as h5r:
+                    data_pre = h5r.get('/Timedata/DayNightFlag')[:]
+
+                vmin = 0
+                vmax = 2
+
+            else:
+                raise ValueError(
+                    'Cant read this satellite`s data.: {}'.format(self.satellite))
+
+            # 过滤无效值
+            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            data_pre = data_pre.astype(np.float)
+            data_pre[invalid_index] = np.nan
+            data = data_pre
+
+            return data
+
+    def get_mirror_side(self):
+        data = None
+        if self.resolution == 1000:
+            satellite_type1 = ['FY3A', 'FY3B']
+            satellite_type2 = ['FY3C', 'FY3D']
+            if self.satellite in satellite_type1:
+                return
+            elif self.satellite in satellite_type2:
+                with h5py.File(self.in_file, 'r') as h5r:
+                    data_pre = h5r.get('/Calibration/Kmirror_Side')[:]
+            else:
+                raise ValueError(
+                    'Cant read this satellite`s data.: {}'.format(self.satellite))
+
+            # 过滤无效值
+            data = data_pre
+
+        return data
+
     def get_timestamp(self):
         """
         return from 1970-01-01 00:00:00 seconds
         """
-        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B', 'FY3C', 'FY3D']
             if self.satellite in satellite_type1:
@@ -1265,7 +1354,6 @@ class ReadMersiL1(ReadL1):
         central_wave_number
         wn(cm-1) = 10 ^ 7 / wave_length(nm)
         """
-        data = None
         if self.resolution == 1000:
             satellite_type1 = ['FY3A', 'FY3B', 'FY3C']
             satellite_type2 = ['FY3D']
