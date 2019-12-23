@@ -786,7 +786,7 @@ def ndsi(i_datetime=None,
         i_nor_s = np.zeros(data_shape, dtype=np.int8)
         i_nor_s[ref_lat > 0] = 1
         _condition2 = np.abs(r_mon_snow_line[np.round((ref_lon + 180) * 10).astype(np.int16),
-                                             int(j_month), i_nor_s]) > abs(ref_lat)
+                                             int(j_month - 1), i_nor_s]) > abs(ref_lat)
         idx_ = np.logical_and.reduce((idx_ocean, judge, _condition, _condition2))
         i_mark[idx_] = 50
         i_step[idx_] = 26
@@ -1153,7 +1153,7 @@ def ndsi(i_datetime=None,
         i_nor_s = np.zeros(data_shape, dtype=np.int8)
         i_nor_s[ref_lat > 0] = 1
         _condition2 = np.abs(r_mon_snow_line[np.round((ref_lon + 180) * 10).astype(np.int16),
-                                             int(j_month), i_nor_s]) > abs(ref_lat)
+                                             int(j_month - 1), i_nor_s]) > abs(ref_lat)
         idx_ = np.logical_and.reduce((idx_land, judge, _condition, _condition2))
         i_mark[idx_] = 50
         i_step[idx_] = 57
