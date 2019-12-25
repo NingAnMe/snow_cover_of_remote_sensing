@@ -127,7 +127,7 @@ def nsdi_orbit_fy3d(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, ou
 
     write_out_file(out_file, result, full_value=0)
     return {
-        "data": {"out_file": [out_filename],
+        "data": {"out_file": [out_file],
                  "data": ndsi_data},
         "status": SUCCESS,
         "statusInfo": {
@@ -153,7 +153,7 @@ def main(in_file):
     result = nsdi_orbit_fy3d(job_name, l1b_file, clm_file, geo_file, ymdhms, outpath)
     if result["status"] == SUCCESS:
         ndsi_data = result["data"]["data"]
-        filename = result["data"]["out_filename"][0]
+        filename = result["data"]["out_file"][0]
         out_img = filename + ".png"
         ndsi_plot_map(ndsi_data, out_img)
 

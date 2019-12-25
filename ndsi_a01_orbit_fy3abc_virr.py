@@ -83,16 +83,16 @@ def nsdi_orbit_fy3abc_virr(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhm
     index = solar_zenith < 87
     scale = np.ones((2000, 2048))
     scale[index] = np.cos(np.deg2rad(solar_zenith[index]))
-    ref_01 = refs.get('CH_03') * 100 / scale
-    ref_02 = refs.get('CH_04') * 100 / scale
-    ref_03 = refs.get('CH_01') * 100 / scale
-    ref_04 = refs.get('CH_02') * 100 / scale
+    ref_01 = refs.get('CH_01') * 100 / scale
+    ref_02 = refs.get('CH_02') * 100 / scale
+    ref_03 = refs.get('CH_07') * 100 / scale
+    ref_04 = refs.get('CH_09') * 100 / scale
     ref_06 = refs.get('CH_06') * 100 / scale
-    ref_07 = refs.get('CH_07') * 100 / scale
-    ref_26 = refs.get('CH_19') * 100 / scale
-    tbb_20 = tbbs.get('CH_20')
-    tbb_31 = tbbs.get('CH_24')
-    tbb_32 = tbbs.get('CH_25')
+    ref_07 = refs.get('CH_06') * 100 / scale
+    ref_26 = refs.get('CH_10') * 100 / scale
+    tbb_20 = tbbs.get('CH_03')
+    tbb_31 = tbbs.get('CH_04')
+    tbb_32 = tbbs.get('CH_05')
 
     ndsi_data, ndsi_flag = ndsi(i_datetime=i_datetime,
                                 longitude=longitude,
@@ -127,7 +127,7 @@ def nsdi_orbit_fy3abc_virr(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhm
 
     write_out_file(out_file, result, full_value=0)
     return {
-        "data": {"out_file": [out_filename],
+        "data": {"out_file": [out_file],
                  "data": ndsi_data},
         "status": SUCCESS,
         "statusInfo": {
@@ -153,7 +153,7 @@ def main(in_file):
     result = nsdi_orbit_fy3abc_virr(job_name, l1b_file, clm_file, geo_file, ymdhms, outpath)
     if result["status"] == SUCCESS:
         ndsi_data = result["data"]["data"]
-        filename = result["data"]["out_filename"][0]
+        filename = result["data"]["out_file"][0]
         out_img = filename + ".png"
         ndsi_plot_map(ndsi_data, out_img)
 
