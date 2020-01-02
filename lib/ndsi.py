@@ -1310,18 +1310,17 @@ def ndsi(i_datetime=None,
     # !!!!   Value = 3 :  confident clear
     # !!!--------------------------------------------------------------------------!!!
     if i_cm is not None:
-        idx_ = np.logical_and.reduce((i_available == 1, i_cm == 1, i_mark == 1))
+        idx_ = np.logical_and.reduce((i_cm <= 1,))
         i_mark[idx_] = 50
         i_step[idx_] = 80
 
-        idx_ = np.logical_or(i_mark == 50, i_mark == 1)
-        idx_ = np.logical_and.reduce((i_available, i_cm == 3, idx_))
+        idx_ = np.logical_and.reduce((i_available, i_cm == 3, i_mark == 1))
         i_mark[idx_] = 25
         i_step[idx_] = 82
 
-        idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
-        i_mark[idx_] = 200
-        i_step[idx_] = 83
+        # idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
+        # i_mark[idx_] = 200
+        # i_step[idx_] = 83
 
     if DUBUG:
         print('i_mark=', i_mark[row, col])
