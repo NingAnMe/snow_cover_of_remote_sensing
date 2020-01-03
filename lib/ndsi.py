@@ -1304,23 +1304,39 @@ def ndsi(i_datetime=None,
     # !     SE by Tree-Decision Algorithm after CM
     # !
     # !!!--------------------------------------------------------------------------!!!
-    # !!!!   Value = 0 :  cloudy
-    # !!!!   Value = 1 :  uncertain
-    # !!!!   Value = 2 :  probably clear
-    # !!!!   Value = 3 :  confident clear
+    # !!!!   Value = 0 :  Invalid
+    # !!!!   Value = 1 :  Coastlines
+    # !!!!   Value = 2 :  Uncertain
+    # !!!!   Value = 3 :  Cloud
+    # !!!!   Value = 4 :  Poss Land Clear
+    # !!!!   Value = 5 :  Land Clear
+    # !!!!   Value = 6 :  Poss Sea Clear
+    # !!!!   Value = 7 :  Sea Clear
+    # !!!!   Value = 8 :  Sun Glint
     # !!!--------------------------------------------------------------------------!!!
     if i_cm is not None:
-        idx_ = np.logical_and.reduce((i_cm <= 1,))
-        i_mark[idx_] = 50
+        idx_ = i_cm == 1
+        i_mark[idx_] = 240
         i_step[idx_] = 80
 
-        idx_ = np.logical_and.reduce((i_available, i_cm == 3, i_mark == 1))
+        idx_ = np.logical_and.reduce((i_cm <= 2, i_cm >= 3))
+        i_mark[idx_] = 50
+        i_step[idx_] = 81
+
+        idx_ = np.logical_or.reduce((i_cm == 5, i_cm == 4))
+        idx_ = np.logical_and(idx_, i_mark == 1)
         i_mark[idx_] = 25
         i_step[idx_] = 82
 
-        # idx_ = np.logical_and.reduce((i_available, i_mark == 200, i_tag < 3))
-        # i_mark[idx_] = 200
-        # i_step[idx_] = 83
+        idx_ = np.logical_or.reduce((i_cm == 6,))
+        idx_ = np.logical_and(idx_, i_mark == 1)
+        i_mark[idx_] = 37
+        i_step[idx_] = 83
+
+        idx_ = np.logical_or.reduce((i_cm == 7,))
+        idx_ = np.logical_and(idx_, i_mark == 1)
+        i_mark[idx_] = 39
+        i_step[idx_] = 84
 
     if DUBUG:
         print('i_mark=', i_mark[row, col])
