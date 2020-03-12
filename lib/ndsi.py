@@ -4,6 +4,19 @@
 @Time    : 2019/5/15
 @Author  : AnNing
 """
+# !!!!   VALUE = 255 : Fill Data--no Data expected For pixel
+# !!!!   VALUE = 254 : Saturated MODIS sensor detector
+# !!!!   VALUE = 240 : NATIONAL OR PROVINCIAL BOUNDARIES
+# !!!!   VALUE = 200 : Snow
+# !!!!   VALUE = 100 : Snow-Covered Lake Ice
+# !!!!   VALUE =  50 : Cloud Obscured
+# !!!!   VALUE =  39 : Ocean
+# !!!!   VALUE =  37 : Inland Water
+# !!!!   VALUE =  25 : Land--no snow detected
+# !!!!   VALUE =  11 : Darkness, terminator or polar
+# !!!!   VALUE =   1 : No Decision
+# !!!!   VALUE =   0 : Sensor Data Missing
+
 from __future__ import print_function
 
 import os
@@ -63,7 +76,7 @@ def ndsi(i_datetime=None,
          # tbb_29=None,
          tbb_31=None,
          tbb_32=None,
-
+         cossl=False,
          ):
     # -------------------------------------------------------------------------
     # SolarZenith_MAX : MAXIMUM SOLAR ZENITH ANGLE, *1.0 DEGREE
@@ -94,7 +107,7 @@ def ndsi(i_datetime=None,
     # i_cm = None  # Cloud MASK
 
     # -------------------------------------------------------------------------
-    # cossl = None  # SOLAR-ZENITH-ANGLE-COSINE
+    # cossl = None  # SOLAR-ZENITH-ANGLE-COSINE 校正
     # glint = None  # SUN GLINT
     # lsm = None  # Mask For Water & Land
     # i_available = None  # Mask For Data to be used
@@ -327,41 +340,48 @@ def ndsi(i_datetime=None,
     # -------------------------------------------------------------------------
     # load row and col
     data_shape = ref_01.shape
-    i_rows, i_cols = data_shape
 
     # -------------------------------------------------------------------------
     # Check Swath_Valid by Solar Zenith
-    d_solar_zenith = solar_zenith
-    i_sum_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < solar_zenith_max).sum()
-    if i_sum_valid < i_cols * 30:
-        raise ValueError('Valid data is not enough.{} < {}'.format(i_sum_valid, i_cols * 30))
+    # d_solar_zenith = solar_zenith
+    # i_sum_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < solar_zenith_max).sum()
+    # i_rows, i_cols = data_shape
+    # if i_sum_valid < i_cols * 30:
+    #     raise ValueError('Valid data is not enough.{} < {}'.format(i_sum_valid, i_cols * 30))
+
+    night = np.zeros(data_shape, dtype=np.bool)
 
     # -------------------------------------------------------------------------
     # Read  FILE_GEO
-
     #  GET SensorZenith
     d_sensor_zenith = sensor_zenith
     index_valid = np.logical_and(d_sensor_zenith > 0, d_sensor_zenith < 90)
     d_sensor_zenith[index_valid] = d_sensor_zenith[index_valid] / 180 * np.pi
-    d_sensor_zenith[~index_valid] = np.nan
+    d_sensor_zenith[~index_valid] = -10
 
     #  GET SensorAzimuth
     d_sensor_azimuth = sensor_azimuth
     index_valid = np.logical_and(d_sensor_azimuth > -360, d_sensor_azimuth < 360)
     d_sensor_azimuth[index_valid] = d_sensor_azimuth[index_valid] / 180 * np.pi
-    d_sensor_azimuth[~index_valid] = np.nan
+    d_sensor_azimuth[~index_valid] = -10
 
     #  GET SolarZenith
     d_solar_zenith = solar_zenith
-    index_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < 180)
+    index_valid = np.logical_and(d_solar_zenith > 0, d_solar_zenith < solar_zenith_max)
+    index_night = np.logical_and(solar_zenith >= solar_zenith_max, solar_zenith <= 180)
+    night[index_night] = 1
+    if index_night.all():
+        print('全部是夜晚数据，不处理')
+        return
+
     d_solar_zenith[index_valid] = d_solar_zenith[index_valid] / 180 * np.pi
-    d_solar_zenith[~index_valid] = np.nan
+    d_solar_zenith[~index_valid] = -10
 
     #  GET SolarAzimuth
     d_solar_azimuth = solar_azimuth
     index_valid = np.logical_and(d_solar_azimuth > -360, d_solar_azimuth < 360)
     d_solar_azimuth[index_valid] = d_solar_azimuth[index_valid] / 180 * np.pi
-    d_solar_azimuth[~index_valid] = np.nan
+    d_solar_azimuth[~index_valid] = -10
 
     #  GET LATITUDE
     r_lats = latitude
@@ -393,15 +413,12 @@ def ndsi(i_datetime=None,
     i_lsm = np.full(data_shape, np.nan)
     i_lsm[land_condition] = 1  # 陆地
     i_lsm[sea_condition] = 0  # 海洋
-
+    lsm = i_lsm
     # -------------------------------------------------------------------------
     # GET Cloud Mask
     i_cm = cloud_mask
 
     # -------------------------------------------------------------------------
-    #  INITIALIZATION
-    i_mark = np.zeros(data_shape)
-    i_step = np.zeros(data_shape)
 
     ref_lon = r_lons
     ref_lat = r_lats
@@ -413,60 +430,93 @@ def ndsi(i_datetime=None,
     a_suna = d_solar_azimuth
 
     # -------------------------------------------------------------------------
-    # COMPUTE The SUN GLINT EAGLE
-    temp = np.sin(a_sunz) * np.sin(a_satz) * np.cos(a_suna - a_sata) + np.cos(a_sunz) * np.cos(a_satz)
-    temp[temp > 1] = 1
-    temp[temp < -1] = -1
-    glint = np.arccos(temp)
-
-    # -------------------------------------------------------------------------
-    lsm = i_lsm
+    #  ################# INITIALIZATION
+    i_mark = np.ones(data_shape)
+    i_step = np.zeros(data_shape)
     i_available = np.ones(data_shape, dtype=np.int8)
 
-    index = np.isnan(a_sata)
-    i_mark[index] = 255
-    i_step[index] = 1
-    i_available[index] = 0
-
-    index = np.isnan(a_satz)
-    i_mark[index] = 255
-    i_step[index] = 2
-    i_available[index] = 0
-
-    index = np.isnan(a_sunz)
-    i_mark[index] = 255
-    i_step[index] = 3
-    i_available[index] = 0
-
-    index = np.isnan(a_suna)
-    i_mark[index] = 255
-    i_step[index] = 4
-    i_available[index] = 0
-
-    index = glint < 15 * np.pi / 180
-    i_mark[index] = 255
-    i_step[index] = 5
-    i_available[index] = 0
-
-    index = np.isnan(ref_lon)
-    i_mark[index] = 255
+    index = np.logical_or.reduce((ref_lon < -180, ref_lon > 180,
+                                  ref_lat < -90, ref_lat > 90))
+    i_mark[index] = 0
     i_step[index] = 6
     i_available[index] = 0
 
-    index = np.isnan(ref_lat)
-    i_mark[index] = 255
+    index = np.logical_or.reduce((a_suna == -10, a_sata == -10))
+    i_mark[index] = 0
     i_step[index] = 7
     i_available[index] = 0
 
-    index = np.isnan(ref_dem)
-    i_mark[index] = 255
-    i_step[index] = 8
+    index = night == 1
+    i_mark[index] = 11
+    i_step[index] = 2
     i_available[index] = 0
 
-    index = np.isnan(lsm)
-    i_mark[index] = 255
-    i_step[index] = 9
-    i_available[index] = 0
+    # index = a_sunz == -10
+    # i_mark[index] = 11
+    # i_step[index] = 3
+    # i_available[index] = 0
+    #
+    # index = a_satz == -10
+    # i_mark[index] = 11
+    # i_step[index] = 4
+    # i_available[index] = 0
+
+    # -------------------------------------------------------------------------
+    # COMPUTE The SUN GLINT EAGLE
+    # temp = np.sin(a_sunz) * np.sin(a_satz) * np.cos(a_suna - a_sata) + np.cos(a_sunz) * np.cos(a_satz)
+    # temp[temp > 1] = 1
+    # temp[temp < -1] = -1
+    # glint = np.arccos(temp)
+    # index = glint < 15 * np.pi / 180
+    # i_mark[index] = 240
+    # i_step[index] = 5
+    # i_available[index] = 0
+
+    # index = np.isnan(ref_dem)
+    # i_mark[index] = 255
+    # i_step[index] = 8
+    # i_available[index] = 0
+    #
+    # index = np.isnan(lsm)
+    # i_mark[index] = 255
+    # i_step[index] = 9
+    # i_available[index] = 0
+
+    # # CORRECT SATURATION VALUE AFTER SOLAR ZENITH ANGLE CORRECTING.
+    # 太阳天顶角校正
+    if cossl:
+        cossl_asunz = 1.0 / np.cos(a_sunz)
+    else:
+        cossl_asunz = 1.0
+    ref_01 = ref_01 * cossl_asunz
+    ref_02 = ref_02 * cossl_asunz
+    ref_03 = ref_03 * cossl_asunz
+    ref_04 = ref_04 * cossl_asunz
+    ref_06 = ref_06 * cossl_asunz
+    ref_07 = ref_07 * cossl_asunz
+    ref_26 = ref_26 * cossl_asunz
+
+    # ref_01[ref_01 <= 0] = 0
+    # ref_02[ref_02 <= 0] = 0
+    # ref_03[ref_03 <= 0] = 0
+    # ref_04[ref_04 <= 0] = 0
+    # ref_06[ref_06 <= 0] = 0
+    # ref_07[ref_07 <= 0] = 0
+    # ref_26[ref_26 <= 0] = 0
+
+    # index = np.logical_and.reduce((ref_01 > 100, ref_02 > 100, ref_03 > 100, ref_04 > 100,
+    #                                ref_06 > 100, ref_07 > 100, ref_26 > 100))
+    # i_mark[index] = 254
+    # i_step[index] = 2
+    # i_available[index] = 0
+
+    # ref_01[ref_01 > 100] = 100
+    # ref_02[ref_02 > 100] = 100
+    # ref_03[ref_03 > 100] = 100
+    # ref_04[ref_04 > 100] = 100
+    # ref_06[ref_06 > 100] = 100
+    # ref_07[ref_07 > 100] = 100
+    # ref_26[ref_26 > 100] = 100
 
     if ref_lat is not None:
         ref_lat_abs = np.abs(ref_lat)
@@ -503,75 +553,67 @@ def ndsi(i_datetime=None,
     #           iAvalible=1     !!  iAvalible=0(1): Data IS(NOT) USABLE.  !!
     # !!!!!!!!!!!!!!!!!!!!!!!!!!   QUALITY CONTROLLING   !!!!!!!!!!!!!!!!!!!!!!!!!!!
     if ref_01 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_01), ref_01 <= 0, ref_01 >= 100))
+        index = np.logical_or.reduce((ref_01 <= 0.001, ref_01 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 11
         i_available[index] = 0
 
     if ref_02 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_02), ref_02 <= 0, ref_02 >= 100))
+        index = np.logical_or.reduce((ref_02 <= 0.001, ref_02 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 12
         i_available[index] = 0
 
     if ref_03 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_03), ref_03 <= 0, ref_03 >= 100))
+        index = np.logical_or.reduce((ref_03 <= 0.001, ref_03 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 13
         i_available[index] = 0
 
     if ref_04 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_04), ref_04 <= 0, ref_04 >= 100))
+        index = np.logical_or.reduce((ref_04 <= 0.001, ref_04 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 14
         i_available[index] = 0
 
     if ref_06 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_06), ref_06 <= 0, ref_06 >= 100))
+        index = np.logical_or.reduce((ref_06 <= 0.001, ref_06 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 15
         i_available[index] = 0
 
     if ref_07 is not None:
-        index = np.logical_or.reduce((np.isnan(ref_07), ref_07 <= 0, ref_07 >= 100))
+        index = np.logical_or.reduce((ref_07 <= 0.001, ref_07 >= 100.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 16
         i_available[index] = 0
 
     if tbb_20 is not None:
-        index = np.logical_or.reduce((np.isnan(tbb_20), tbb_20 <= 170, tbb_20 >= 350))
+        index = np.logical_or.reduce((tbb_20 <= 170, tbb_20 >= 350.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 17
         i_available[index] = 0
 
     if tbb_31 is not None:
-        index = np.logical_or.reduce((np.isnan(tbb_31), tbb_31 <= 170, tbb_31 >= 340))
+        index = np.logical_or.reduce((tbb_31 <= 170, tbb_31 >= 340.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 18
         i_available[index] = 0
 
     if tbb_32 is not None:
-        index = np.logical_or.reduce((np.isnan(tbb_32), tbb_32 <= 170, tbb_32 >= 340))
+        index = np.logical_or.reduce((tbb_32 <= 170, tbb_32 >= 340.001))
+        index = np.logical_and(index, i_available == 1)
         i_mark[index] = 255
         i_step[index] = 19
         i_available[index] = 0
-
-    # # CORRECT SATURATION VALUE AFTER SOLAR ZENITH ANGLE CORRECTING.
-    # cossl = 1.0
-    # ref_01 = ref_01 * cossl
-    # ref_02 = ref_01 * cossl
-    # ref_03 = ref_01 * cossl
-    # ref_04 = ref_01 * cossl
-    # ref_06 = ref_01 * cossl
-    # ref_07 = ref_01 * cossl
-    # index = np.logical_or.reduce((ref_01 <= 0, ref_01 >= 100.0, ref_02 <= 0, ref_02 >= 100.0,
-    #                               ref_03 <= 0, ref_03 >= 100.0, ref_04 <= 0, ref_04 >= 100.0,
-    #                               ref_06 <= 0, ref_06 >= 100.0, ref_07 <= 0, ref_07 >= 100.0,
-    #                               tbb_20 <= 170.0, tbb_20 >= 350.0, tbb_31 <= 170.0, tbb_31 >= 340.0,
-    #                               tbb_32 <= 170.0, tbb_32 >= 340.0,))
-    # i_mark[index] = 255
-    # i_step[index] = 20
-    # i_available[index] = 0
 
     # -------------------------------------------------------------------------
     # JUDGE & MARK  SNOW
@@ -616,12 +658,12 @@ def ndsi(i_datetime=None,
         dt_12 = None
 
     if no_none((ref_02, ref_01)):
-        rr_21 = ref_02 / ref_01
+        rr_21 = np.divide(ref_02, ref_01)
         rr_21[rr_21 > 100] = 100
     else:
         rr_21 = None
     if no_none((ref_04, ref_06)):
-        rr_46 = ref_04 / ref_06
+        rr_46 = np.divide(ref_04, ref_06)
         rr_46[rr_46 > 100] = 100
     else:
         rr_46 = None
@@ -817,6 +859,8 @@ def ndsi(i_datetime=None,
     i_step[idx_] = 30
     i_tag[idx_] = 2
     judge[idx_] = False
+
+    i_available[judge == 0] = 0
 
     del idx_ocean
     # !!!========================================================================!!!
@@ -1193,14 +1237,14 @@ def ndsi(i_datetime=None,
         i_tag[idx_] = 2
         judge[idx_] = False
 
-    if no_none((dr_16, )):
+    if no_none((dr_16,)):
         idx_ = np.logical_and.reduce((idx_land, judge, dr_16 < 0))
         i_mark[idx_] = 25
         i_step[idx_] = 61
         i_tag[idx_] = 2
         judge[idx_] = False
 
-    if no_none((ndsi_6, )):
+    if no_none((ndsi_6,)):
         idx_ = np.logical_and.reduce((idx_land, judge, ndsi_6 < -0.15))
         i_mark[idx_] = 25
         i_step[idx_] = 62
@@ -1271,14 +1315,15 @@ def ndsi(i_datetime=None,
     #     i_mark[idx_] = 50
     #     i_step[idx_] = 74
     #
-    idx_1 = np.logical_and.reduce((idx_available, lsm == 1, i_mark == 1))
+    # idx_1 = np.logical_and.reduce((idx_available, lsm == 1, i_mark == 1))
     # judge = np.full(data_shape, True, dtype=np.bool)
     #
-    if no_none((ndsi_6, tbb_31, dt_01)):
-        idx_ = np.logical_and.reduce((idx_1, ndsi_6 > 0.27, tbb_31 < 273.15, dt_01 > 2.45, dt_01 < 14.10))
-        i_mark[idx_] = 200
-        i_step[idx_] = 75
-        judge[idx_] = False
+    # if no_none((ndsi_6, tbb_31, dt_01)):
+    #     idx_ = np.logical_and.reduce((idx_1, ndsi_6 > 0.27, tbb_31 < 273.15, dt_01 > 2.45, dt_01 < 14.10))
+    #     i_mark[idx_] = 200
+    #     i_step[idx_] = 75
+    #     i_tag[idx_] = 2
+    #     judge[idx_] = False
     #
     # if ref_02 is not None:
     #     idx_ = np.logical_and.reduce((idx_1, judge, ref_02 > 9.1, ref_02 < 26))
@@ -1299,6 +1344,8 @@ def ndsi(i_datetime=None,
     #     i_step[idx_] = 79
     # del idx_, idx_1, judge
 
+    i_available[judge == 0] = 0
+
     # !!!==========================================================================!!!
     # !
     # !     SE by Tree-Decision Algorithm after CM
@@ -1315,30 +1362,36 @@ def ndsi(i_datetime=None,
     # !!!!   Value = 8 :  Sun Glint
     # !!!--------------------------------------------------------------------------!!!
     if i_cm is not None:
-        idx_ = i_cm == 1
-        i_mark[idx_] = 240
-        i_step[idx_] = 80
-
-        idx_ = np.logical_and.reduce((i_cm <= 2, i_cm >= 3))
+        idx_ = np.logical_or.reduce((i_cm == 2, i_cm == 3))
+        idx_ = np.logical_and.reduce((idx_, i_mark == 1))
         i_mark[idx_] = 50
         i_step[idx_] = 81
+        i_tag[idx_] = 2
+        i_available[idx_] = 0
 
         idx_ = np.logical_or.reduce((i_cm == 5, i_cm == 4))
-        idx_ = np.logical_and(idx_, i_mark == 1)
+        idx_ = np.logical_and.reduce((idx_, i_mark == 1))
         i_mark[idx_] = 25
         i_step[idx_] = 82
+        i_tag[idx_] = 2
+        i_available[idx_] = 0
 
         idx_ = np.logical_or.reduce((i_cm == 6,))
-        idx_ = np.logical_and(idx_, i_mark == 1)
+        idx_ = np.logical_and.reduce((idx_, i_mark == 1))
         i_mark[idx_] = 37
         i_step[idx_] = 83
+        i_tag[idx_] = 2
+        i_available[idx_] = 0
 
         idx_ = np.logical_or.reduce((i_cm == 7,))
-        idx_ = np.logical_and(idx_, i_mark == 1)
+        idx_ = np.logical_and.reduce((idx_, i_mark == 1))
         i_mark[idx_] = 39
         i_step[idx_] = 84
+        i_tag[idx_] = 2
+        i_available[idx_] = 0
 
     if DUBUG:
         print('i_mark=', i_mark[row, col])
         print('i_step=', i_step[row, col])
-    return i_mark, i_step
+        print('i_tag=', i_tag[row, col])
+    return i_mark, i_step, i_tag

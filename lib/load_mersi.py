@@ -10,6 +10,7 @@ from lib.pb_io import attrs2dict
 from lib.pb_sat import planck_r2t
 from lib.read_base import ReadL1
 import numpy as np
+import pandas as pd
 
 __description__ = 'MERSI传感器读取类'
 __author__ = 'wangpeng'
@@ -41,8 +42,11 @@ class ReadMersiL1(ReadL1):
     红外通道：
     """
 
-    def __init__(self, in_file, geo_file=None, cloud_file=None):
+    def __init__(self, in_file, geo_file=None, cloud_file=None, in_ir_file=None, in_vis_file=None, coef_txt_flag=None):
         sensor = 'MERSI'
+        self.in_ir_file = in_ir_file
+        self.in_vis_file = in_vis_file
+        self.coef_txt_flag = coef_txt_flag
         super(ReadMersiL1, self).__init__(in_file, sensor)
         self.geo_file = geo_file
         self.cloud_file = cloud_file
@@ -356,6 +360,42 @@ class ReadMersiL1(ReadL1):
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
         return data
 
+    def get_k0_from_txt(self):
+        k0_vis = k0_ir = None
+        if self.in_vis_file is not None:
+            k0_k1_vis_df = pd.read_table(self.in_vis_file, sep='\t')
+            k0_vis = k0_k1_vis_df.iloc[:, [0, 1]].to_numpy()
+
+        if self.in_ir_file is not None:
+            k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
+            k0_ir = k0_k1_ir_df.ilic[:, [0, 1]].to_numpy()
+
+        return k0_vis, k0_ir
+
+    def get_k1_from_txt(self):
+        k1_vis = k1_ir = None
+        if self.in_vis_file is not None:
+            k0_k1_vis_df = pd.read_table(self.in_vis_file, sep='\t')
+            k1_vis = k0_k1_vis_df.iloc[:, [0, 2]].to_numpy()
+
+        if self.in_ir_file is not None:
+            k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
+            k1_ir = k0_k1_ir_df.ilic[:, [0, 2]].to_numpy()
+
+        return k1_vis, k1_ir
+
+    def get_k2_from_txt(self):
+        k2_vis = k2_ir = None
+        if self.in_vis_file is not None:
+            k0_k1_vis_df = pd.read_table(self.in_vis_file, sep='\t')
+            k2_vis = k0_k1_vis_df.iloc[:, [0, 3]].to_numpy()
+
+        if self.in_ir_file is not None:
+            k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
+            k2_ir = k0_k1_ir_df.ilic[:, [0, 3]].to_numpy()
+
+        return k2_vis, k2_ir
+
     def get_k0(self):
         """
         return K0
@@ -436,7 +476,16 @@ class ReadMersiL1(ReadL1):
             else:
                 raise ValueError(
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
-
+            if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
+                k0_vis, k0_ir = self.get_k0_from_txt()
+                if k0_vis is not None:
+                    for channel_name, k0 in k0_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k0
+                if k0_ir is not None:
+                    for channel_name, k0 in k0_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k0
         else:
             raise ValueError(
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
@@ -522,7 +571,16 @@ class ReadMersiL1(ReadL1):
             else:
                 raise ValueError(
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
-
+            if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
+                k1_vis, k1_ir = self.get_k1_from_txt()
+                if k1_vis is not None:
+                    for channel_name, k1 in k1_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k1
+                if k1_ir is not None:
+                    for channel_name, k1 in k1_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k1
         else:
             raise ValueError(
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
@@ -608,7 +666,16 @@ class ReadMersiL1(ReadL1):
             else:
                 raise ValueError(
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
-
+            if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
+                k2_vis, k2_ir = self.get_k2_from_txt()
+                if k2_vis is not None:
+                    for channel_name, k2 in k2_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k2
+                if k2_ir is not None:
+                    for channel_name, k2 in k2_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k2
         else:
             raise ValueError(
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
@@ -968,9 +1035,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < -180, data_pre > 180)
+            # invalid_index = np.logical_or(data_pre < -180, data_pre > 180)
             data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # data_pre[invalid_index] = np.nan
             data = data_pre
 
         return data
@@ -997,9 +1064,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < -90, data_pre > 90)
+            # invalid_index = np.logical_or(data_pre < -90, data_pre > 90)
             data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # data_pre[invalid_index] = np.nan
             data = data_pre
 
         return data
@@ -1026,9 +1093,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < 0, data_pre > 7)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < 0, data_pre > 7)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre
 
         return data
@@ -1055,9 +1122,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < -400, data_pre > 10000)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < -400, data_pre > 10000)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre
 
         return data
@@ -1084,9 +1151,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < 0, data_pre > 17)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < 0, data_pre > 17)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre
 
         return data
@@ -1123,9 +1190,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre / 100.
 
         return data
@@ -1157,9 +1224,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre / 100.
 
         return data
@@ -1197,9 +1264,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre / 100.
 
         return data
@@ -1232,9 +1299,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre / 100.
 
         return data
@@ -1266,9 +1333,9 @@ class ReadMersiL1(ReadL1):
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
 
             # 过滤无效值
-            invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
-            data_pre = data_pre.astype(np.float32)
-            data_pre[invalid_index] = np.nan
+            # invalid_index = np.logical_or(data_pre < vmin, data_pre > vmax)
+            # data_pre = data_pre.astype(np.float32)
+            # data_pre[invalid_index] = np.nan
             data = data_pre
             return data
 

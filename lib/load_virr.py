@@ -14,6 +14,7 @@ from lib.pb_io import attrs2dict
 from lib.pb_sat import planck_r2t
 from lib.read_base import ReadL1
 import numpy as np
+import pandas as pd
 
 g_main_path, g_main_file = os.path.split(os.path.realpath(__file__))
 
@@ -65,9 +66,14 @@ class ReadVirrL1(ReadL1):
         红外通道：
     """
 
-    def __init__(self, in_file, geo_file=None, cloud_file=None):
+    def __init__(self, in_file, geo_file=None, cloud_file=None, in_ir_file=None, in_vis_file=None, coef_txt_flag=None):
         sensor = 'VIRR'
+        self.in_ir_file = in_ir_file
+        self.in_vis_file = in_vis_file
+        self.coef_txt_flag = coef_txt_flag
+
         super(ReadVirrL1, self).__init__(in_file, sensor)
+
         self.geo_file = geo_file
         self.cloud_file = cloud_file
         self.file_name = ""
@@ -257,6 +263,30 @@ class ReadVirrL1(ReadL1):
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
         return data
 
+    def get_k0_from_txt(self):
+        k0_vis = k0_ir = None
+        if self.in_vis_file is not None:
+            k0_k1_vis_df = pd.read_table(self.in_vis_file, sep='\t')
+            k0_vis = k0_k1_vis_df.iloc[:, [0, 1]].to_numpy()
+
+        if self.in_ir_file is not None:
+            k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
+            k0_ir = k0_k1_ir_df.ilic[:, [0, 1]].to_numpy()
+
+        return k0_vis, k0_ir
+
+    def get_k1_from_txt(self):
+        k1_vis = k1_ir = None
+        if self.in_vis_file is not None:
+            k0_k1_vis_df = pd.read_table(self.in_vis_file, sep='\t')
+            k1_vis = k0_k1_vis_df.iloc[:, [0, 2]].to_numpy()
+
+        if self.in_ir_file is not None:
+            k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
+            k1_ir = k0_k1_ir_df.ilic[:, [0, 2]].to_numpy()
+
+        return k1_vis, k1_ir
+
     def get_k0(self):
         """
         0次项
@@ -284,6 +314,7 @@ class ReadVirrL1(ReadL1):
             else:
                 raise ValueError(
                     'Cant read this satellite`s data.: {}'.format(self.satellite))
+
             for i in range(self.channels):
                 channel_name = 'CH_{:02d}'.format(i + 1)
                 if i < 2:
@@ -308,6 +339,17 @@ class ReadVirrL1(ReadL1):
                     channel_data = np.full(
                         self.data_shape, k0, dtype=np.float32)
                     data[channel_name] = channel_data
+            if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
+                k0_vis, k0_ir = self.get_k0_from_txt()
+                if k0_vis is not None:
+                    for channel_name, k0 in k0_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k0
+                if k0_ir is not None:
+                    for channel_name, k0 in k0_vis:
+                        if channel_name in data:
+                            data[channel_name][:] = k0
+
         else:
             raise ValueError(
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
@@ -364,6 +406,16 @@ class ReadVirrL1(ReadL1):
                     channel_data = np.full(
                         self.data_shape, k1, dtype=np.float32)
                     data[channel_name] = channel_data
+                if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
+                    k1_vis, k1_ir = self.get_k1_from_txt()
+                    if k1_vis is not None:
+                        for channel_name, k1 in k1_vis:
+                            if channel_name in data:
+                                data[channel_name][:] = k1
+                    if k1_ir is not None:
+                        for channel_name, k1 in k1_vis:
+                            if channel_name in data:
+                                data[channel_name][:] = k1
         else:
             raise ValueError(
                 'Cant read this data, please check its resolution: {}'.format(self.in_file))
