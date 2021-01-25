@@ -9,13 +9,13 @@ import warnings
 import numpy as np
 from lib.load_mersi import ReadMersiL1
 from lib.load_virr import ReadVirrL1
+from lib.load_modis import ReadModisEnvi
 from lib.hdf5 import write_out_file
 from lib.ndsi import ndsi
 from lib import utils
 from lib.plot import ndsi_plot_map
 from config import *
 from datetime import datetime
-
 
 # !!!!   VALUE = 255 : Fill Data--no Data expected For pixel
 # !!!!   VALUE = 254 : Saturated MODIS sensor detector
@@ -73,11 +73,14 @@ def nsdi_orbit(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir
         coef_txt_flag = True
     else:
         coef_txt_flag = False
-
     if "MERSI" in job_name:
-        data_loader = ReadMersiL1(l1_1000m, l1_geo, l1_cloudmask, vis_file, ir_file, coef_txt_flag)
+        data_loader = ReadMersiL1(
+            l1_1000m, l1_geo, l1_cloudmask, vis_file, ir_file, coef_txt_flag)
     elif "VIRR" in job_name:
-        data_loader = ReadVirrL1(l1_1000m, l1_geo, l1_cloudmask, vis_file, ir_file, coef_txt_flag)
+        data_loader = ReadVirrL1(
+            l1_1000m, l1_geo, l1_cloudmask, vis_file, ir_file, coef_txt_flag)
+    elif 'MODIS' in job_name:
+        data_loader = ReadModisEnvi(l1_1000m, l1_cloudmask)
     else:
         raise ValueError(f"不支持的传感器：{job_name}")
     ymd = data_loader.ymd
@@ -92,7 +95,7 @@ def nsdi_orbit(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir
     refs = data_loader.get_ref()
     tbbs = data_loader.get_tbb()
     sensor_zenith = data_loader.get_sensor_zenith()
-    sensor_azimuth = data_loader.get_sensor_zenith()
+    sensor_azimuth = data_loader.get_sensor_azimuth()
     solar_zenith = data_loader.get_solar_zenith()
     solar_azimuth = data_loader.get_solar_azimuth()
 
@@ -118,6 +121,18 @@ def nsdi_orbit(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir
         tbb_20 = tbbs.get('CH_03')
         tbb_31 = tbbs.get('CH_04')
         tbb_32 = tbbs.get('CH_05')
+    elif "MODIS" in job_name:
+        #         print(refs)
+        ref_01 = refs.get('CH_01')
+        ref_02 = refs.get('CH_02')
+        ref_03 = refs.get('CH_03')
+        ref_04 = refs.get('CH_04')
+        ref_06 = refs.get('CH_06')
+        ref_07 = refs.get('CH_07')
+        ref_26 = refs.get('CH_26')
+        tbb_20 = tbbs.get('CH_20')
+        tbb_31 = tbbs.get('CH_31')
+        tbb_32 = tbbs.get('CH_32')
     else:
         raise ValueError(f"不支持的传感器：{job_name}")
 
@@ -141,7 +156,7 @@ def nsdi_orbit(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir
                        tbb_20=tbb_20,
                        tbb_31=tbb_31,
                        tbb_32=tbb_32,
-                       cossl=True,  # 是否进行日地距离校正的开关
+                       cossl=False,  # 是否进行日地距离校正的开关
                        )
     if result_ndsi is not None:
         ndsi_data, ndsi_flag, i_tag = result_ndsi
@@ -156,7 +171,8 @@ def nsdi_orbit(job_name, l1_1000m, l1_cloudmask, l1_geo, yyyymmddhhmmss, out_dir
               'Latitude': (latitude, np.float)
               }
 
-    out_filename = '{}_GBAL_L2_{}_{}_1000M_MS.HDF'.format(job_name, yyyymmddhhmmss[0:8], yyyymmddhhmmss[8:12])
+    out_filename = '{}_NDSI_GRANULE_{}_{}.HDF5'.format(
+        job_name, yyyymmddhhmmss[0:8], yyyymmddhhmmss[8:12])
     out_file = os.path.join(out_dir, out_filename)
 
     write_out_file(out_file, result, full_value=0)
@@ -187,7 +203,8 @@ def main(in_file):
     print(l1b_file)
     print(clm_file)
     print(geo_file)
-    result = nsdi_orbit(job_name, l1b_file, clm_file, geo_file, ymdhms, outpath, vis_file=vis_file, ir_file=ir_file)
+    result = nsdi_orbit(job_name, l1b_file, clm_file, geo_file,
+                        ymdhms, outpath, vis_file=vis_file, ir_file=ir_file)
     if result is not None and result["status"] == SUCCESS:
         ndsi_data = result["data"]["data"]
         filename = result["data"]["out_file"][0]

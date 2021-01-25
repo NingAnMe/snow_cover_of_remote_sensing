@@ -271,7 +271,7 @@ class ReadVirrL1(ReadL1):
 
         if self.in_ir_file is not None:
             k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
-            k0_ir = k0_k1_ir_df.ilic[:, [0, 1]].to_numpy()
+            k0_ir = k0_k1_ir_df.iloc[:, [0, 1]].to_numpy()
 
         return k0_vis, k0_ir
 
@@ -283,7 +283,7 @@ class ReadVirrL1(ReadL1):
 
         if self.in_ir_file is not None:
             k0_k1_ir_df = pd.read_table(self.in_ir_file, sep='\t')
-            k1_ir = k0_k1_ir_df.ilic[:, [0, 2]].to_numpy()
+            k1_ir = k0_k1_ir_df.iloc[:, [0, 2]].to_numpy()
 
         return k1_vis, k1_ir
 
@@ -340,13 +340,13 @@ class ReadVirrL1(ReadL1):
                         self.data_shape, k0, dtype=np.float32)
                     data[channel_name] = channel_data
             if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
-                k0_vis, k0_ir = self.get_k0_from_txt()
-                if k0_vis is not None:
-                    for channel_name, k0 in k0_vis:
+                k0_vis_c, k0_ir_c = self.get_k0_from_txt()
+                if k0_vis_c is not None:
+                    for channel_name, k0 in k0_vis_c:
                         if channel_name in data:
                             data[channel_name][:] = k0
-                if k0_ir is not None:
-                    for channel_name, k0 in k0_vis:
+                if k0_ir_c is not None:
+                    for channel_name, k0 in k0_ir_c:
                         if channel_name in data:
                             data[channel_name][:] = k0
 
@@ -407,13 +407,13 @@ class ReadVirrL1(ReadL1):
                         self.data_shape, k1, dtype=np.float32)
                     data[channel_name] = channel_data
                 if self.coef_txt_flag:  # 在这处理，达到的效果是，如果有某些通道不需要重新定标也可以处理
-                    k1_vis, k1_ir = self.get_k1_from_txt()
-                    if k1_vis is not None:
-                        for channel_name, k1 in k1_vis:
+                    k1_vis_c, k1_ir_c = self.get_k1_from_txt()
+                    if k1_vis_c is not None:
+                        for channel_name, k1 in k1_vis_c:
                             if channel_name in data:
                                 data[channel_name][:] = k1
-                    if k1_ir is not None:
-                        for channel_name, k1 in k1_vis:
+                    if k1_ir_c is not None:
+                        for channel_name, k1 in k1_ir_c:
                             if channel_name in data:
                                 data[channel_name][:] = k1
         else:
